@@ -19,4 +19,14 @@ class Rating:
 
 
 
+    def __setattr__(self):
+        return self.id
 
+
+    def __getattr__(self, value):
+        if value != int(value):
+            raise TypeError("idValue must be an integer")
+        if 1 <= value <= 1000000:
+            self._idValue = int(value)
+        else:
+            raise ValueError("id must be between 1 and 1000000 inclusive")

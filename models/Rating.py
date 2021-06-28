@@ -2,7 +2,7 @@ class Rating:
 
     
 
-    def __init__(self, id):
+    def __init__(self, id, productId, customerId, stars, review):
         self.id = id
         self.productId = productId
         self.customerId = customerId

@@ -29,3 +29,15 @@ class Category:
                 raise ValueError('id must be greater then 0 and lesser then 1000000')
             else:
                 object.__setattr__(self, name, value)
+        else:
+            object.__setattr__(self, name, value)
+
+class CategoryRepositoryFactory:
+    def __init__(self):
+        self.lastCreatedId = 0
+
+    def getCategory(self, name):
+        obj = Category(name)
+        self.lastCreatedId += 1
+        obj.id = self.lastCreatedId
+        return obj

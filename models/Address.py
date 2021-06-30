@@ -25,3 +25,14 @@ class Address:
                 object.__setattr__(self, name, value)
         else:
             object.__setattr__(self, name, value)
+
+####### factory and repository #########
+class AddressRepositoryFactory:
+    def __init__(self, lastCreatedId = 0):
+        self.lastCreatedId = lastCreatedId
+
+    def getAddress(self, country, city, street, number):
+        id = self.lastCreatedId + 1
+        a = Address(id,country, city, street, number)
+        self.lastCreatedId = a.id
+        return a

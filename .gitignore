@@ -1,3 +1,4 @@
+.vscode
 models/.vscode
 models/__pycache__
 models/test.py

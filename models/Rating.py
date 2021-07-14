@@ -97,4 +97,15 @@ class RatingRepositoryFactory:
         for p in self._products:
             if p._id == _id:
                 return p
+            
+    def findByStars(self, _stars):
+        
+        for s in self._products:
+            if s._stars == _stars:
+                return s
+
+    def deleteById(self, _id):
+        for product in self._products:
+            if product._id == _id:
+                self._products.remove(product)       
 

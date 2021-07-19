@@ -16,7 +16,7 @@ class Customer:
         else:
             raise ValueError ("Enter a range of values from 1 to 1 000 000")
     def __str__(self):
-        return f" - ID customer: {self.__id}, \n - First name: {self.firstName}, \n - Last name: {self.lastName}, \n - Adress Id: {self.addressId}"
+        return f"\nID customer: {self.__id}\nFirst name: {self.firstName}\nLast name: {self.lastName}\nAdress Id: {self.addressId}"
     
     def __repr__(self):
        return self.__str__()

@@ -20,3 +20,19 @@ class Customer:
     
     def __repr__(self):
        return self.__str__()
+
+############# Factory Repository Method ################
+
+class CustomerRepositoryFactory:
+    def __init__ (self):
+        self._lastCreatedId = 0
+        self._customers = []
+
+################# Factory Method ######################
+
+    def getCustomer(self, firstName, lastName, addressId):
+        obj = Customer(id, firstName, lastName, addressId)
+        self._lastCreatedId += 1
+        obj.id = self._lastCreatedId
+        self.save(obj)
+        return obj

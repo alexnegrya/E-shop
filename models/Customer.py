@@ -11,14 +11,10 @@ class Customer:
 
     @id.setter
     def id(self, id):
-        try:
-            if id in range(1, 1000000):
-                self.__id = id
-            else:
-                raise ValueError
-        except ValueError:
+        if id in range(1, 1000000):
+            self.__id = id
+        else:
             raise ValueError ("Enter a range of values from 1 to 1 000 000")
-
     def __str__(self):
         return f" - ID customer: {self.__id}, \n - First name: {self.firstName}, \n - Last name: {self.lastName}, \n - Adress Id: {self.addressId}"
     

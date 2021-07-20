@@ -16,7 +16,23 @@ class Customer:
         else:
             raise ValueError ("Enter a range of values from 1 to 1 000 000")
     def __str__(self):
-        return f" - ID customer: {self.__id}, \n - First name: {self.firstName}, \n - Last name: {self.lastName}, \n - Adress Id: {self.addressId}"
+        return f"\nID customer: {self.__id}\nFirst name: {self.firstName}\nLast name: {self.lastName}\nAdress Id: {self.addressId}"
     
     def __repr__(self):
        return self.__str__()
+
+############# Factory Repository Method ################
+
+class CustomerRepositoryFactory:
+    def __init__ (self):
+        self._lastCreatedId = 0
+        self._customers = []
+
+################# Factory Method ######################
+
+    def getCustomer(self, firstName, lastName, addressId):
+        obj = Customer(id, firstName, lastName, addressId)
+        self._lastCreatedId += 1
+        obj.id = self._lastCreatedId
+        self.save(obj)
+        return obj

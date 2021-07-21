@@ -73,7 +73,8 @@ class OrderItemRepositoryFactory:
 
 #REPOSITORY METHODS ####################
 
-    def save( self, orderItem, quantity ):
+    def save( self, orderItem ):
+
         if orderItem in self._orderItems:
             raise ValueError( "The same item is already in list!" )
         
@@ -89,18 +90,11 @@ class OrderItemRepositoryFactory:
                 return i
         return None        
 
-    def findByItemld( self, itemld ):
+    def deleteByItemld( self, id ):
         for i in self._orderItems:
-            if( i._itemld == itemld ):
-                return i
+            if( i._id == id ):
+                self._orderItems.remove(i)
         return None        
-
-
-
-
-
-
-
 
 
 

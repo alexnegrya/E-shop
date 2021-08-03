@@ -1,104 +1,341 @@
-# Address.py module 
-
 class Address:
-    def __init__(self, id, country, city, street, number):
-        self.setId(id)
-        self.setCountry(country) 
-        self.setCity(city)
-        self.setStreet(street)
-        self.setNumber(number)
+    __ids = []
+
+    def __init__(self, country, city, street, number):
+        self.id = self.__get_id()
+        self.country = country
+        self.city = city
+        self.street = street
+        self.number = number
+
+    def __get_id(self):
+        from random import randint
+        ID = ''
+        for v in range(randint(4, 6)):
+            ID = ID + str(randint(0, 9))
+        return int(ID)
+
+    def __check_id(self, id_):
+        if id_ not in self.__ids:
+            if id_ < 1 or id_ > 1000000:
+                raise ValueError(
+                    'id must be greater then 0 and lesser then 1000000')
+            elif type(id_) != int:
+                raise TypeError('id must be an integer')
+            else:
+                return True
+        else:
+            return False
 
     def __str__(self):
-        return f"Id: {self._id}\nCountry: {self._country}\nCity: {self._city}\nStreet: {self._street}\nNumber: {self._number}"
+        title = f"--- Address ---"
+        id = f"Id: {self.id}"
+        country = f'Country: {self.country}'
+        city = f'City: {self.city}'
+        street = f'Street: {self.street}'
+        number = f'Street number: {self.number}'
+        return f'\n\n{title}\n{id}\n{country}\n{city}\n{street}\n{number}\n\n'
 
     def __repr__(self):
         return str(self)
-    
-    ####### validation method adress parameter string type #######
-    def __validateAddressName(self, name):
-            if type(name) is not str:
-                raise ValueError('Error: value must be string')
-            if not name:
-                raise ValueError('Error: value can\'t be empty')
-            if len(name) < 3:
-                raise ValueError("Error: country name is too short")
 
+    def __setattr__(self, name, value):
+        if name == 'id':
+            if self.__check_id(value):
+                object.__setattr__(self, name, value)
+            else:
+                while True:
+                    if value == self.id:
+                        if self.__check_id(value):
+                            self.id = self.__get_id()
+                    else:
+                        break
+                object.__setattr__(self, name, value)
+        elif name == '__ids':
+            raise AttributeError('changing this attribute is not allowed')
+        elif name in ['country', 'city', 'street']:
+            if type(value) != str:
+                raise TypeError('name must be a string')
+            elif value == '':
+                raise NameError('name cannot be an empty string')
+            else:
+                # Spliting name by letters
+                splited = []
+                for i in range(len(value)):
+                    splited.append(value[i])
+                # Checking name for letters repition
+                repeated_numbers = {}
+                for i in range(len(splited)):
+                    if splited[i] not in repeated_numbers:
+                        repeated_numbers[splited[i]] = 1
+                    else:
+                        repeated_numbers[splited[i]] += 1
+                # Checking name for the same letters only
+                for i in range(len(repeated_numbers)):
+                    if repeated_numbers[splited[i]] == len(value):
+                        raise NameError(
+                            'the name contains only the same letters')
+                # Cheking name for numbers
+                for letter in splited:
+                    try:
+                        int(letter)
+                        raise NameError(
+                            'the name must not contain integer values')
+                    except ValueError:
+                        pass
+                object.__setattr__(self, name, value)
+        elif name == 'number':
+            if type(value) != int and type(value) != str:
+                raise TypeError('wrong number type')
+            else:
+                object.__setattr__(self, name, value)
+        else:
+            object.__setattr__(self, name, value)
 
-    def setId(self, id):
-            if type(id) is not int:
-                raise ValueError('Error: id must be integer')
-            if id<=0 or id>1000000:
-                raise ValueError("Error: id is not valid")
-            self._id = id
-    def getId(self):
-        return self._id
+    def __getattr__(self, name):
+        if name == 'id':
+            object.__getattribute__(self, str(name))
+        elif name == '__ids':
+            return tuple(self.__ids)
 
-    def setCountry(self, country):
-            self.__validateAddressName(country)
-            self._country = country
+    def __eq__(self, other):
+        if type(other) == Address:
+            if self.id == other.id:
+                return True
+            else:
+                return False
 
-    def getCountry(self):
-        return self._country
-
-    def setCity(self, city):
-            self.__validateAddressName(city)
-            self._city = city
-    def getCity(self):
-        return self._city
-
-    def setStreet(self, street):
-            self.__validateAddressName(street)
-            self._street = street
-    def getStreet(self):
-        return self._street
-
-    def setNumber(self, number):
-            if type(number) is not str:
-                raise ValueError('Error: value must be string')
-            if not number:
-                raise ValueError('Error: value can\'t be empty')
-            self._number = number
-    def getNumber(self):
-        return self._number
 
 class AddressRepositoryFactory:
     def __init__(self):
-        self.__lastCreatedId = 0
-        self.__addresses = []
+        self._lastCreatedId = 0
+        self._addresses = []
 
-####### FACTORY methods #########
+    def __str__(self):
+        if len(self._addresses) != 0:
+            out = ''
+            for address in self._addresses:
+                out = out + str(address)
+        else:
+            out = '\nThere are no addresses here\n'
+        return out
+
+    def __repr__(self):
+        return str(self)
+
+    # ##### Factory methods #####
     def getAddress(self, country, city, street, number):
-        id = self.__lastCreatedId + 1
-        a = Address(id,country, city, street, number)
-        self.__lastCreatedId = a.getId()
-        ### remember the object in the list #####
-        self.save(a)
+        obj = Address(country, city, street, number)
+        self._lastCreatedId += 1
+        obj.id = self._lastCreatedId
+        self._addresses.append(obj)
+        return obj
 
-        return a
+    def get_last_id(self):
+        return f"\n{'-'*10}\n" + 'Last created object id: ' + str(self._lastCreatedId) + f"\n{'-'*10}\n"
 
-####### REPOSITORY methods #########
-# BREAD -> Browse, Read, Edit, Add, Delete
-    def save(self,address):
-        self.__addresses.append(address)
-
+    # ##### Repository methods #####
     def all(self):
-        return tuple(self.__addresses)
+        return self._addresses.copy()
 
-    def findById(self, id):
-        for p in self.__addresses:
-            if p._id == id:
-                return p
-    def findByProperty(self, searchProperty):
-        list_of_found = []
-        for obj in self.__addresses:
-            for name, value in obj.__dict__.items():
-                if value == searchProperty:
-                    list_of_found.append(obj)
+    def save(self, address):
+        # Type verify
+        if type(address) != Address:
+            raise TypeError('the entity should only be Address type')
+        # Id verify
+        if len(self._addresses) != 0:
+            for a in self._addresses:
+                if address == a:
+                    raise AttributeError(
+                        'a Address object with this id already exists')
+        self._addresses.append(address)
 
-            return list_of_found
-            
-    def deleteById(self, id):
-        for obj in self.__addresses:
-            for name, value in obj.__dict__.items():
-                if value == id:
-                    self.__addresses.remove(obj)
+    def save_many(self, addresses_list):
+        # checking addresses_list type
+        if type(addresses_list) != list:
+            raise TypeError('addresses you want save should be in the list')
+        # checking object quantity
+        if len(addresses_list) in [0, 1]:
+            l = len(addresses_list)
+            raise ValueError(f'at least 2 objects can be saved, not {l}')
+        # checking objects type
+        for i in range(len(addresses_list)):
+            if type(addresses_list[i]) != Address:
+                raise TypeError(
+                    f'object with index {i} is not a Address type')
+        # checking objects id's
+        for address in addresses_list:
+            for a in self._addresses:
+                if address.id == a.id:
+                    raise AttributeError(
+                        'a Address object with this id already exists')
+        self._addresses.extend(addresses_list)
+
+    def overwrite(self, addresses_list):
+        # checking addresses_list type
+        if type(addresses_list) != list:
+            raise TypeError(
+                'addresses you want overwrite should be in the list')
+        # checking objects type
+        for i in range(len(addresses_list)):
+            if type(addresses_list[i]) != Address:
+                raise TypeError(
+                    f'object with index {i} is not a Address type')
+        # checking objects id's
+        for address in addresses_list:
+            for a in self._addresses:
+                if address.id == a.id:
+                    raise AttributeError(
+                        'a Address object with this id already exists')
+        self._addresses = addresses_list
+
+    def findById(self, id_, showMode=True):
+        if type(id_) != int:
+            raise TypeError('id must be int type')
+        for address in self._addresses:
+            if address.id == id_:
+                if showMode:
+                    return f"\n{'-'*10}\n" + f'address found by id [{id_}]:' + str(address) + f"\n{'-'*10}\n"
+                else:
+                    return address
+        if showMode:
+            return f"\n{'-'*10}\n" + f'address found by id [{id_}]:' + '\n\nNothing was found' + f"\n{'-'*10}\n"
+        else:
+            return address
+
+    def deleteById(self, id_):
+        if type(id_) != int:
+            raise TypeError('id must be int type')
+        for address in self._addresses:
+            if id_ == address.id:
+                self._addresses.remove(address)
+
+    def findByCountry(self, country, showMode=True):
+        if type(country) != str:
+            raise TypeError('country must be str type')
+        # With a incomplete match with the country
+        found = []
+        for address in self._addresses:
+            if country in address.country:
+                found.append(address)
+        if len(found) != 0:
+            if showMode:
+                out = ''
+                for a in found:
+                    out = out + str(a)
+                return f"\n{'-'*10}\n" + f'Addresses found by country keyword \"{country}\":' + out + f"\n{'-'*10}\n"
+            else:
+                return found
+        # With a complete match with the country
+        for address in self._addresses:
+            if address.country == country:
+                if showMode:
+                    return f"\n{'-'*10}\n" + f'Found address with country \"{country}\":' + str(address) + f"\n{'-'*10}\n"
+                else:
+                    return found
+        if showMode:
+            return f"\n{'-'*10}\n" + f'Found address with country \"{country}\":' + '\n\nNothing was found' + f"\n{'-'*10}\n"
+        else:
+            return found
+
+    def findByCity(self, city, showMode=True):
+        if type(city) != str:
+            raise TypeError('city must be str type')
+        # With a incomplete match with the city
+        found = []
+        for address in self._addresses:
+            if city in address.city:
+                found.append(address)
+        if len(found) != 0:
+            if showMode:
+                out = ''
+                for a in found:
+                    out = out + str(a)
+                return f"\n{'-'*10}\n" + f'Addresses found by city keyword \"{city}\":' + out + f"\n{'-'*10}\n"
+            else:
+                return found
+        # With a complete match with the city
+        for address in self._addresses:
+            if address.city == city:
+                if showMode:
+                    return f"\n{'-'*10}\n" + f'Found address with city \"{city}\":' + str(address) + f"\n{'-'*10}\n"
+                else:
+                    return found
+        if showMode:
+            return f"\n{'-'*10}\n" + f'Found address with city \"{city}\":' + '\n\nNothing was found' + f"\n{'-'*10}\n"
+        else:
+            return found
+    
+    def findByStreet(self, street, showMode=True):
+        if type(street) != str:
+            raise TypeError('street must be str type')
+        # With a incomplete match with the street
+        found = []
+        for address in self._addresses:
+            if street in address.street:
+                found.append(address)
+        if len(found) != 0:
+            if showMode:
+                out = ''
+                for a in found:
+                    out = out + str(a)
+                return f"\n{'-'*10}\n" + f'Addresses found by street keyword \"{street}\":' + out + f"\n{'-'*10}\n"
+            else:
+                return found
+        # With a complete match with the street
+        for address in self._addresses:
+            if address.street == street:
+                if showMode:
+                    return f"\n{'-'*10}\n" + f'Found address with street \"{street}\":' + str(address) + f"\n{'-'*10}\n"
+                else:
+                    return found
+        if showMode:
+            return f"\n{'-'*10}\n" + f'Found address with street \"{street}\":' + '\n\nNothing was found' + f"\n{'-'*10}\n"
+        else:
+            return found
+
+    def findByNumber(self, number, showMode=True):
+        if type(number) == int:
+            # search
+            found = []
+            for address in self._addresses:
+                if address.number == number:
+                    found.append(address)
+            # output
+            if showMode:
+                if len(found) == 0:
+                    return f"\n{'-'*10}\n" + f'Addresses found by number [{number}]:' + f'\n\nNothing was found' + f"\n{'-'*10}\n"
+                else:
+                    out = ''
+                    for address in found:
+                        out = out + str(address)
+                    return f"\n{'-'*10}\n" + f'Addresses found by number [{number}]:' + out + f"\n{'-'*10}\n"
+            else:
+                return found
+        elif type(number) == str:
+            # With a incomplete match with the number
+            found = []
+            for address in self._addresses:
+                if number in address.number:
+                    found.append(address)
+            if len(found) != 0:
+                if showMode:
+                    out = ''
+                    for a in found:
+                        out = out + str(a)
+                    return f"\n{'-'*10}\n" + f'Addresses found by street number keyword \"{number}\":' + out + f"\n{'-'*10}\n"
+                else:
+                    return found
+            # With a complete match with the number
+            for address in self._addresses:
+                if address.number == number:
+                    if showMode:
+                        return f"\n{'-'*10}\n" + f'Found address with number \"{number}\":' + str(address) + f"\n{'-'*10}\n"
+                    else:
+                        return found
+            if showMode:
+                return f"\n{'-'*10}\n" + f'Found address with number \"{number}\":' + '\n\nNothing was found' + f"\n{'-'*10}\n"
+            else:
+                return found
+        else:
+            raise TypeError('unsupported number type')

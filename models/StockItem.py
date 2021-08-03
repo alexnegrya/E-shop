@@ -1,4 +1,4 @@
-class OrderItem:
+class StockItem:
     __ids = []
     __itemIds = []
 
@@ -27,7 +27,7 @@ class OrderItem:
             return False
 
     def __str__(self):
-        title = f"--- OrderItem ---"
+        title = f"--- StockItem ---"
         id = f"Id: {self.id}"
         quantity = f'Quantity: {self.quantity}'
         itemId = f'Item id: {self.itemId}'
@@ -64,7 +64,8 @@ class OrderItem:
                     self.__itemIds.append(value)
                     object.__setattr__(self, name, value)
                 else:
-                    raise TypeError('can\'t link multiple order items to the same item id')
+                    raise TypeError(
+                        'can\'t link multiple order items to the same item id')
         else:
             object.__setattr__(self, name, value)
 
@@ -77,36 +78,36 @@ class OrderItem:
             return tuple(self.__itemIds)
 
     def __eq__(self, other):
-        if type(other) == OrderItem:
+        if type(other) == StockItem:
             if self.id == other.id:
                 return True
             else:
                 return False
 
 
-class OrderItemRepositoryFactory:
+class StockItemRepositoryFactory:
     def __init__(self):
         self._lastCreatedId = 0
-        self._orderItems = []
+        self._stockItems = []
 
     def __str__(self):
-        if len(self._orderItems) != 0:
+        if len(self._stockItems) != 0:
             out = ''
-            for orderItem in self._orderItems:
-                out = out + str(orderItem)
+            for stockItem in self._stockItems:
+                out = out + str(stockItem)
         else:
-            out = '\nThere are no order items here\n'
+            out = '\nThere are no stock items here\n'
         return out
 
     def __repr__(self):
         return str(self)
 
     # ##### Factory methods #####
-    def getOrderItem(self, quantity, itemId):
-        obj = OrderItem(quantity, itemId)
+    def getStockItem(self, quantity, itemId):
+        obj = StockItem(quantity, itemId)
         self._lastCreatedId += 1
         obj.id = self._lastCreatedId
-        self._orderItems.append(obj)
+        self._stockItems.append(obj)
         return obj
 
     def get_last_id(self):
@@ -114,70 +115,73 @@ class OrderItemRepositoryFactory:
 
     # ##### Repository methods #####
     def all(self):
-        return tuple(self._orderItems)
+        return tuple(self._stockItems)
 
-    def save(self, orderItem):
+    def save(self, stockItem):
         # Type verify
-        if type(orderItem) != OrderItem:
-            raise TypeError('the entity should be only OrderItem type')
+        if type(stockItem) != StockItem:
+            raise TypeError('the entity should be only StockItem type')
         # Id verify
-        if len(self._orderItems) != 0:
-            for oi in self._orderItems:
-                if orderItem == oi:
+        if len(self._stockItems) != 0:
+            for si in self._stockItems:
+                if stockItem == si:
                     raise AttributeError(
-                        'a OrderItem object with this id already exists')
-        self._orderItems.append(orderItem)
+                        'a StockItem object with this id already exists')
+        self._stockItems.append(stockItem)
 
-    def save_many(self, orderItems_list):
-        # checking orderItems_list type
-        if type(orderItems_list) != list:
+    def save_many(self, stockItems_list):
+        # checking stockItems_list type
+        if type(stockItems_list) != list:
             raise TypeError('order items you want save should be in the list')
         # checking object quantity
-        if len(orderItems_list) in [0, 1]:
-            l = len(orderItems_list)
+        if len(stockItems_list) in [0, 1]:
+            l = len(stockItems_list)
             raise ValueError(f'at least 2 objects can be saved, not {l}')
         # checking objects type
-        for i in range(len(orderItems_list)):
-            if type(orderItems_list[i]) != OrderItem:
+        for i in range(len(stockItems_list)):
+            if type(stockItems_list[i]) != StockItem:
                 raise TypeError(
-                    f'object with index {i} is not a OrderItem type')
+                    f'object with index {i} is not a StockItem type')
         # checking objects id's
-        for orderItem in orderItems_list:
-            for oi in self._orderItems:
-                if orderItem.id == oi.id:
+        for stockItem in stockItems_list:
+            for si in self._stockItems:
+                if stockItem == si:
                     raise AttributeError(
-                        'a OrderItem object with this id already exists')
-        self._orderItems.extend(orderItems_list)
+                        'a StockItem object with this id already exists')
+        self._stockItems.extend(stockItems_list)
 
-    def overwrite(self, orderItems_list):
-        # checking orderItems_list type
-        if type(orderItems_list) != list:
-            raise TypeError(
-                'order items you want overwrite should be in the list')
+    def overwrite(self, stockItems_list):
+        # checking stockItems_list type
+        if type(stockItems_list) != list:
+            raise TypeError('order items you want save should be in the list')
+        # checking object quantity
+        if len(stockItems_list) in [0, 1]:
+            l = len(stockItems_list)
+            raise ValueError(f'at least 2 objects can be saved, not {l}')
         # checking objects type
-        for i in range(len(orderItems_list)):
-            if type(orderItems_list[i]) != OrderItem:
+        for i in range(len(stockItems_list)):
+            if type(stockItems_list[i]) != StockItem:
                 raise TypeError(
-                    f'object with index {i} is not a OrderItem type')
+                    f'object with index {i} is not a StockItem type')
         # checking objects id's
-        for orderItem in orderItems_list:
-            for oi in self._orderItems:
-                if orderItem.id == oi.id:
+        for stockItem in stockItems_list:
+            for si in self._stockItems:
+                if stockItem == si:
                     raise AttributeError(
-                        'a OrderItem object with this id already exists')
-        self._orderItems = orderItems_list
+                        'a StockItem object with this id already exists')
+        self._stockItems = stockItems_list
 
     def findById(self, id_, showMode=True):
-        for orderItem in self._orderItems:
-            if orderItem.id == id_:
+        for stockItem in self._stockItems:
+            if stockItem.id == id_:
                 if showMode:
-                    return f"\n{'-'*10}\n" + f'Order item found by id [{id_}]:' + str(orderItem) + f"\n{'-'*10}\n"
+                    return f"\n{'-'*10}\n" + f'Stock item found by id [{id_}]:' + str(stockItem) + f"\n{'-'*10}\n"
                 else:
-                    return orderItem
+                    return stockItem
         if showMode:
-            return f"\n{'-'*10}\n" + f'Order item found by id [{id_}]:' + '\n\nNothing was found' + f"\n{'-'*10}\n"
+            return f"\n{'-'*10}\n" + f'Stock item found by id [{id_}]:' + '\n\nNothing was found' + f"\n{'-'*10}\n"
         else:
-            return orderItem
+            return stockItem
 
     def findByQuantity(self, quantity, showMode=True):
         # check type
@@ -185,20 +189,20 @@ class OrderItemRepositoryFactory:
             raise TypeError('quantity must be int type')
         # search
         found = []
-        for orderItem in self._orderItems:
-            if orderItem.quantity == quantity:
-                found.append(orderItem)
+        for stockItem in self._stockItems:
+            if stockItem.quantity == quantity:
+                found.append(stockItem)
         if len(found) != 0:
             if showMode:
-                return f"\n{'-'*10}\nFound order items with quantity [{quantity}]: \n{found}\n{'-'*10}"
+                return f"\n{'-'*10}\nFound stock items with quantity [{quantity}]: \n{found}\n{'-'*10}"
             else:
                 return found
         else:
             if showMode:
-                return f"\n{'-'*10}\nFound order items with quantity [{quantity}]: \nNothing was found\n{'-'*10}"
+                return f"\n{'-'*10}\nFound stock items with quantity [{quantity}]: \nNothing was found\n{'-'*10}"
             else:
                 return found
-    
+
     def findByQuantityRange(self, quantityMin, quantityMax, showMode=True):
         # check type
         for quantity in [quantityMin, quantityMax]:
@@ -206,42 +210,42 @@ class OrderItemRepositoryFactory:
                 raise TypeError('quantity ranges must be int type')
         # search
         found = []
-        for orderItem in self._orderItems:
-            if orderItem.quantity >= quantityMin\
-                and orderItem.quantity <= quantityMax:
-                    found.append(orderItem)
+        for stockItem in self._stockItems:
+            if stockItem.quantity >= quantityMin\
+                    and stockItem.quantity <= quantityMax:
+                found.append(stockItem)
         if len(found) != 0:
             if showMode:
-                return f"\n{'-'*10}\nFound order items in quantity range [{quantityMin}-{quantityMax}]: \n{found}\n{'-'*10}"
+                return f"\n{'-'*10}\nFound stock items in quantity range [{quantityMin}-{quantityMax}]: \n{found}\n{'-'*10}"
             else:
                 return found
         else:
             if showMode:
-                return f"\n{'-'*10}\nFound order items in quantity range [{quantityMin}-{quantityMax}]: \nNothing was found\n{'-'*10}"
+                return f"\n{'-'*10}\nFound stock items in quantity range [{quantityMin}-{quantityMax}]: \nNothing was found\n{'-'*10}"
             else:
                 return found
-    
+
     def findByItemId(self, itemId, showMode=True):
         # check type
         if type(itemId) != int:
             raise TypeError('itemId must be int type')
         # search
         found = []
-        for orderItem in self._orderItems:
-            if orderItem.itemId == itemId:
-                found.append(orderItem)
+        for stockItem in self._stockItems:
+            if stockItem.itemId == itemId:
+                found.append(stockItem)
         if len(found) != 0:
             if showMode:
-                return f"\n{'-'*10}\nFound order items with item id [{itemId}]: \n{found}\n{'-'*10}"
+                return f"\n{'-'*10}\nFound stock items with item id [{itemId}]: \n{found}\n{'-'*10}"
             else:
                 return found
         else:
             if showMode:
-                return f"\n{'-'*10}\nFound order items with item id [{itemId}]: \nNothing was found\n{'-'*10}"
+                return f"\n{'-'*10}\nFound stock items with item id [{itemId}]: \nNothing was found\n{'-'*10}"
             else:
                 return found
 
     def deleteById(self, id_):
-        for orderItem in self._orderItems:
-            if id_ == orderItem.id:
-                self._orderItems.remove(orderItem)
+        for stockItem in self._stockItems:
+            if id_ == stockItem.id:
+                self._stockItems.remove(stockItem)

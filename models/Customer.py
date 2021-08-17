@@ -53,7 +53,7 @@ class Customer:
                 object.__setattr__(self, name, value)
         elif name == '__ids':
             raise AttributeError('changing this attribute is not allowed')
-        elif name == 'firstName' or name == 'lastName':
+        elif name in ('firstName', 'lastName'):
             if type(value) != str:
                 raise TypeError('name must be a string')
             elif value == '':
@@ -85,7 +85,8 @@ class Customer:
                         pass
                 object.__setattr__(self, name, value)
         elif name == 'addressId':
-            if type(value) != int:
+            from .Address import Address
+            if type(value) not in [int, Address]:
                 raise TypeError('wrong Address id')
             else:
                 object.__setattr__(self, name, value)

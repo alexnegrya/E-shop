@@ -55,9 +55,9 @@ class Address:
             raise AttributeError('changing this attribute is not allowed')
         elif name in ['country', 'city', 'street']:
             if type(value) != str:
-                raise TypeError('name must be a string')
+                raise TypeError('value must be a string')
             elif value == '':
-                raise NameError('name cannot be an empty string')
+                raise NameError('value cannot be an empty string')
             else:
                 # Spliting name by letters
                 splited = []
@@ -70,23 +70,42 @@ class Address:
                         repeated_numbers[splited[i]] = 1
                     else:
                         repeated_numbers[splited[i]] += 1
-                # Checking name for the same letters only
-                for i in range(len(repeated_numbers)):
-                    if repeated_numbers[splited[i]] == len(value):
-                        raise NameError(
-                            'the name contains only the same letters')
                 # Cheking name for numbers
                 for letter in splited:
                     try:
                         int(letter)
                         raise NameError(
-                            'the name must not contain integer values')
+                            'the value must not contains integer values')
                     except ValueError:
                         pass
+                # Checking name for the same letters only
+                for i in range(len(repeated_numbers)):
+                    if repeated_numbers[splited[i]] == len(value):
+                        raise NameError(
+                            'the value contains only the same letters')
                 object.__setattr__(self, name, value)
         elif name == 'number':
             if type(value) != int and type(value) != str:
                 raise TypeError('wrong number type')
+            if type(value) == str:
+                # Checking value for emptiness
+                if value in ('', ' '):
+                    raise ValueError('value must not be empty')
+                # Spliting str by characters
+                splited = []
+                for i in range(len(value)):
+                    splited.append(value[i])
+                # Checking str for characters repition
+                repeated_numbers = {}
+                for i in range(len(splited)):
+                    if splited[i] not in repeated_numbers:
+                        repeated_numbers[splited[i]] = 1
+                    else:
+                        repeated_numbers[splited[i]] += 1
+                # Checking str for the content of letters
+                if value.isupper() or value.islower():
+                    raise ValueError('value must not contains letters')
+                object.__setattr__(self, name, value.strip())
             else:
                 object.__setattr__(self, name, value)
         else:

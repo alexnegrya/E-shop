@@ -1,6 +1,3 @@
-from models import OrderItem
-
-
 class Order:
     __ids = []
 

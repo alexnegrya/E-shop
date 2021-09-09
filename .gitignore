@@ -1,9 +1,15 @@
-.vscode
-models/.vscode
-models/__pycache__
-models/test.py
+# __pycache__ folders
 __pycache__
-scheme.png
+models/__pycache__
+services/__pycache__
 ui/__pycache__
 gui/__pycache__
-services/__pycache__
+
+# IDE folders
+.vscode
+models/.vscode
+
+# Private
+scheme.png
+todo.txt
+sql/user_password.txt

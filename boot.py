@@ -5,8 +5,15 @@ from models.Order import Order
 from models.Customer import *
 from models.Address import *
 from services.TestData import TestDataService
+from services.PGDataService import PGDataService
 
-# Initialization
+# Services initialization
 tds = TestDataService()
-prf = ProductRepositoryFactory()
-crf = CustomerRepositoryFactory()
+with open('sql/user_password.txt', 'r') as file:
+    password = file.read()
+pgds = PGDataService('localhost', 'eshop', 'postgres', password)
+pgds.open()
+
+# Repositories initialization
+prf = ProductRepositoryFactory(pgds)
+crf = CustomerRepositoryFactory(pgds)

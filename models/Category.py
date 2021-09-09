@@ -1,58 +1,38 @@
 class Category:
-    __ids = []
-
-    def __init__(self, name, parentCategoryId=None):
-        self.id = self.__get_id()
+    def __init__(self, id_, name, parentCategoryId=None):
+        self.inDB = False
+        self.id = id_
         self.name = name
         self.parentCategoryId = parentCategoryId
-
-    def __get_id(self):
-        from random import randint
-        ID = ''
-        for v in range(randint(4, 6)):
-            ID = ID + str(randint(0, 9))
-        return int(ID)
-
-    def __check_id(self, id_):
-        if id_ not in self.__ids:
-            if id_ < 1 or id_ > 1000000:
-                raise ValueError(
-                    'id must be greater then 0 and lesser then 1000000')
-            elif type(id_) != int:
-                raise TypeError('id must be an integer')
-            else:
-                return True
-        else:
-            return False
     
     def __str__(self):
         title = f"--- Category \"{self.name}\" ---"
-        id = f"Id: {self.id}"
+        id_ = f"Id: {self.id}"
+        inDB = f'In DB: {self.inDB}'
         if self.parentCategoryId == None:
             parent = 'Have parent category: No'
         else:
             parent = 'Have parent category: Yes'
             parent = parent + '\n' + f'- parent categoty id: {self.parentCategoryId}'
-        out = '\n\n' + title + '\n' + id + '\n' + parent + '\n\n'
+        out = f'\n\n{title}\n{id_}\n{inDB}\n{parent}\n\n'
         return out
     
     def __repr__(self):
-        return str(self)
+        return f'<<{[self.id, self.inDB, self.name, self.parentCategoryId]}>>'
 
     def __setattr__(self, name, value):
         if name == 'id':
-            if self.__check_id(value):
+            if self.inDB == False:
+                if type(value) == int:
+                    object.__setattr__(self, name, value)
+                else:
+                    raise TypeError('id must have an int value')
+        elif name == 'inDB':
+            if value in (True, False):
                 object.__setattr__(self, name, value)
             else:
-                while True:
-                    if value == self.id:
-                        if self.__check_id(value):
-                            self.id = self.__get_id()
-                    else:
-                        break
-                object.__setattr__(self, name, value)
-        elif name == '__ids':
-            raise AttributeError('changing this attribute is not allowed')
+                raise TypeError(
+                    'value for inDB attribute must be True or False only')
         elif name == 'name':
             if type(value) != str:
                 raise TypeError('name must be a string')
@@ -83,18 +63,12 @@ class Category:
                         pass
                 object.__setattr__(self, name, value)
         elif name == 'parentCategoryId':
-            if type(value) != int:
+            if type(value) != int and value != None:
                 raise TypeError('wrong parent Category id')
             else:
                 object.__setattr__(self, name, value)
         else:
             object.__setattr__(self, name, value)
-
-    def __getattr__(self, name):
-        if name == 'id':
-            object.__getattribute__(self, str(name))
-        elif name == '__ids':
-            return tuple(self.__ids)
 
     def __eq__(self, other):
         if type(other) == Category:
@@ -105,152 +79,109 @@ class Category:
 
 
 class CategoryRepositoryFactory:
-    def __init__(self):
-        self._lastCreatedId = 0
-        self._categories = []
+    def __init__(self, pgds):
+        self.pgds = pgds
 
     def __str__(self):
-        if len(self._categories) != 0:
+        res = self.pgds.query('SELECT id, name, parent_category_id FROM categories')
+        if len(res) > 0:
+            categories = []
+            for row in res:
+                c = self.getCategory(row[0], row[1], row[2])
+                c.inDB = True
+                categories.append(c)
             out = ''
-            for category in self._categories:
+            for category in categories:
                 out = out + str(category)
         else:
-            out = '\nThere are no categories here\n'
+            out = '\nNo categories here\n'
         return out
     
     def __repr__(self):
-        return str(self)
+        return str(self.pgds.query('SELECT * FROM categories'))
 
     # ##### Factory methods #####
-    def getCategory(self, name):
-        obj = Category(name)
-        self._lastCreatedId += 1
-        obj.id = self._lastCreatedId
-        self._categories.append(obj)
-        return obj
-    
-    def get_last_id(self):
-        return f"\n{'-'*10}\n" + 'Last created object id: ' + str(self._lastCreatedId) + f"\n{'-'*10}\n"
+    def getCategory(self, id_, name, parentCategoryId=None):
+        return Category(id_, name, parentCategoryId)
 
     # ##### Repository methods #####
     def all(self):
-        return tuple(self._categories)
+        res = self.pgds.query('SELECT id, name, parent_category_id FROM categories')
+        if len(res) > 0:
+            categories = []
+            for row in res:
+                categories.append(self.getCategory(row[0], row[1], row[2]))
+            return categories
+        else:
+            return []
     
     def save(self, category):
         # Type verify
         if type(category) != Category:
             raise TypeError('the entity should only be Category type')
-        # Id verify
-        if len(self._categories) != 0:
-            for c in self._categories:
-                if category == c:
-                    raise AttributeError('a Category object with this id already exists')
-        self._categories.append(category)
+        # Save object data
+        pcId = category.parentCategoryId
+        if pcId == None:
+            PcId = 'null'
+        else:
+            PcId = pcId
+        if category.inDB == False:
+            category.id = self.pgds.query(f'INSERT INTO categories(name, created, parent_category_id)\
+                VALUES (\'{category.name}\', now(), {PcId}) RETURNING id')[0][0]
+            category.inDB = True
+        elif category.inDB:
+            self.pgds.query(f'''
+                UPDATE categories
+                SET name = \'{category.name}\',
+                    updated = now(),
+                    parent_category_id = {PcId}
+                WHERE id = {category.id}
+            ''')
 
-    def save_many(self, categories_list):
-        # checking categories_list type
-        if type(categories_list) != list:
-            raise TypeError('categories you want save should be in the list')
-        # checking object quantity
-        if len(categories_list) in [0, 1]:
-            l = len(categories_list)
+    def save_many(self, *categories):
+        # Checking object quantity
+        l = len(categories)
+        if l in [0, 1]:
             raise ValueError(f'at least 2 objects can be saved, not {l}')
-        # checking objects type
-        for i in range(len(categories_list)):
-            if type(categories_list[i]) != Category:
-                raise TypeError(
-                    f'object with index {i} is not a Category type')
-        # checking objects id's
-        for category in categories_list:
-            for c in self._categories:
-                if category.id == c.id:
-                    raise AttributeError(
-                        'a Category object with this id already exists')
-        self._categories.extend(categories_list)
-
-    def overwrite(self, categories_list):
-        # checking categories_list type
-        if type(categories_list) != list:
-            raise TypeError(
-                'categories you want overwrite should be in the list')
-        # checking objects type
-        for i in range(len(categories_list)):
-            if type(categories_list[i]) != Category:
-                raise TypeError(
-                    f'object with index {i} is not a Category type')
-        # checking objects id's
-        for category in categories_list:
-            for c in self._categories:
-                if category.id == c.id:
-                    raise AttributeError(
-                        'a Category object with this id already exists')
-        self._categories = categories_list
+        # Checking objects type
+        for i in range(len(categories)):
+            if type(categories[i]) != Category:
+                raise TypeError(f'object number {i+1} is not a Category type')
+        # Save objects data
+        for category in categories:
+            pcId = category.parentCategoryId
+            if pcId == None:
+                PcId = 'null'
+            else:
+                PcId = pcId
+            if category.inDB == False:
+                category.id = self.pgds.query(f'INSERT INTO categories(name, created, parent_category_id)\
+                VALUES (\'{category.name}\', now(), {PcId}) RETURNING id')[0][0]
+                category.inDB = True
+            elif category.inDB:
+                self.pgds.query(f'''
+                    UPDATE categories
+                    SET name = \'{category.name}\',
+                        updated = now(),
+                        parent_category_id = {PcId}
+                    WHERE id = {category.id}
+                ''')
     
-    def findById(self, id_, showMode=True):
+    def findById(self, id_):
+        # Checking type
         if type(id_) != int:
             raise TypeError('id must be int type')
-        for category in self._categories:
-            if category.id == id_:
-                if showMode:
-                    return f"\n{'-'*10}\n" + f'Category found by id [{id_}]:' + str(category) + f"\n{'-'*10}\n"
-                else:
-                    return category
-        if showMode:
-            return f"\n{'-'*10}\n" + f'Category found by id [{id_}]:' + '\n\nNothing was found' + f"\n{'-'*10}\n"
-        else:
-            return category
-
-    def findByName(self, name, showMode=True):
-        if type(name) != str:
-            raise TypeError('name must be str type')
-        # With a incomplete match with the name
-        found = []
-        for category in self._categories:
-            if name in category.name:
-                found.append(category)
-        if len(found) != 0:
-            if showMode:
-                out = ''
-                for c in found:
-                    out = out + str(c)
-                return f"\n{'-'*10}\n" + f'Categories found by name keyword \"{name}\":' + out + f"\n{'-'*10}\n"
-            else:
-                return found
-        # With a complete match with the name
-        for category in self._categories:
-            if category.name == name:
-                if showMode:
-                    return f"\n{'-'*10}\n" + f'Found Category with name \"{name}\":' + str(category) + f"\n{'-'*10}\n"
-                else:
-                    return found
-        if showMode:
-            return f"\n{'-'*10}\n" + f'Found Category with name \"{name}\":' + '\n\nNothing was found' + f"\n{'-'*10}\n"
-        else:
-            return found
-
-    def findByParentCategoryId(self, parentCategoryId, showMode=True):
-        if type(parentCategoryId) != int:
-            raise TypeError('parent category id must be int type')
-        # search
-        found = []
-        for category in self._categories:
-            if category.parentCategoryId == parentCategoryId:
-                found.append(category)
-        # output
-        if showMode:
-            if len(found) == 0:
-                return f"\n{'-'*10}\n" + f'Categories found by parent category id [{parentCategoryId}]:' + f'\n\nNothing was found' + f"\n{'-'*10}\n"
-            else:
-                out = ''
-                for category in found:
-                    out = out + str(category)
-                return f"\n{'-'*10}\n" + f'Categories found by parent category id [{parentCategoryId}]:' + out + f"\n{'-'*10}\n"
-        else:
-            return found
+        # Search
+        res = self.pgds.query(f'SELECT id, name, parent_category_id FROM categories WHERE id = {id_}')
+        if len(res) != 0:
+            data = res[0]
+            c = self.getCategory(data[0], data[1], data[2])
+            c.inDB = True
+            return c
 
     def deleteById(self, id_):
+        # Checking type
         if type(id_) != int:
             raise TypeError('id must be int type')
-        for category in self._categories:
-            if id_ == category.id:
-                self._categories.remove(category)
+        # Delete object data
+        self.pgds.query(f'DELETE FROM categories WHERE id = {id_}')

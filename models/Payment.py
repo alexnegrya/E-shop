@@ -1,76 +1,46 @@
 class Payment:
-    __ids = []
-
-    def __init__(self, method, volume):
-        self.id = self.__get_id()
+    def __init__(self, id_, method, volume):
+        self.id = id_
+        self.inDB = False
         self.method = method
         self.volume = volume
-
-    def __get_id(self):
-        from random import randint
-        ID = ''
-        for v in range(randint(4, 6)):
-            ID = ID + str(randint(0, 9))
-        return int(ID)
-
-    def __check_id(self, id_):
-        if id_ not in self.__ids:
-            if id_ < 1 or id_ > 1000000:
-                raise ValueError(
-                    'id must be greater then 0 and lesser then 1000000')
-            elif type(id_) != int:
-                raise TypeError('id must be an integer')
-            else:
-                return True
-        else:
-            return False
 
     def __str__(self):
         title = f"--- Payment ---"
         id = f"Id: {self.id}"
+        inDB = f'In DB: {self.inDB}'
         method = f'Method: {self.method}'
         volume = f'Volume: {self.volume}'
-        out = f'\n\n{title}\n{id}\n{method}\n{volume}\n\n'
-        return out
+        return f'\n\n{title}\n{id}\n{inDB}\n{method}\n{volume}\n\n'
 
     def __repr__(self):
-        return str(self)
+        return f'<<{[self.id, self.inDB, self.method, self.volume]}>>'
 
     def __setattr__(self, name, value):
         if name == 'id':
-            if self.__check_id(value):
+            if self.inDB == False:
+                if type(value) == int:
+                    object.__setattr__(self, name, value)
+                else:
+                    raise TypeError('id must have an int value')
+        elif name == 'inDB':
+            if value in (True, False):
                 object.__setattr__(self, name, value)
             else:
-                while True:
-                    if value == self.id:
-                        if self.__check_id(value):
-                            self.id = self.__get_id()
-                    else:
-                        break
-                object.__setattr__(self, name, value)
-        elif name == '__ids':
-            raise AttributeError('changing this attribute is not allowed')
+                raise TypeError(
+                    'value for inDB attribute must be True or False only')
         elif name == 'method':
-            if type(value) != tuple:
-                raise TypeError('method must be tuple type')
-            for v in value:
-                if type(v) != str:
-                    raise TypeError('method must be contain only str objects')
+            if type(value) != str:
+                raise TypeError('method must be str type')
             object.__setattr__(self, name, value)
         elif name == 'volume':
-            from Money import Money
+            from .Money import Money
             if type(value) != Money:
                 raise TypeError('volume must be Money type')
             else:
                 object.__setattr__(self, name, value)
         else:
             object.__setattr__(self, name, value)
-
-    def __getattr__(self, name):
-        if name == 'id':
-            object.__getattribute__(self, str(name))
-        elif name == '__ids':
-            return tuple(self.__ids)
 
     def __eq__(self, other):
         if type(other) == Payment:
@@ -81,165 +51,100 @@ class Payment:
 
 
 class PaymentRepositoryFactory:
-    def __init__(self):
-        self._lastCreatedId = 0
-        self._payments = []
+    def __init__(self, pgds):
+        self.pgds = pgds
 
     def __str__(self):
-        if len(self._payments) != 0:
+        data = self.pgds.query('SELECT * FROM payments')
+        if len(data) != 0:
+            from .Money import MoneyRepositoryFactory
+            mrf = MoneyRepositoryFactory(self.pgds)
+            payments = []
+            for row in data:
+                p = self.getPayment(row[0], row[1], mrf.findById(row[2]))
+                p.inDB = True
+                payments.append(p)
             out = ''
-            for payment in self._payments:
+            for payment in payments:
                 out = out + str(payment)
         else:
-            out = '\nThere are no payments here\n'
+            out = '\nNo payments here\n'
         return out
 
     def __repr__(self):
-        return str(self)
+        return str(self.pgds.query('SELECT * FROM payments'))
 
     # ##### Factory methods #####
-    def getPayment(self, method, volume):
-        obj = Payment(method, volume)
-        self._lastCreatedId += 1
-        obj.id = self._lastCreatedId
-        self._payments.append(obj)
-        return obj
-
-    def get_last_id(self):
-        return f"\n{'-'*10}\n" + 'Last created object id: ' + str(self._lastCreatedId) + f"\n{'-'*10}\n"
+    def getPayment(self, id_, method, volume):
+        return Payment(id_, method, volume)
 
     # ##### Repository methods #####
     def all(self):
-        return tuple(self._payments)
+        data = self.pgds.query('SELECT * FROM payments')
+        if len(data) > 0:
+            from .Money import MoneyRepositoryFactory
+            mrf = MoneyRepositoryFactory(self.pgds)
+            payments = []
+            for row in data:
+                p = self.getPayment(row[0], row[1], mrf.findById(row[2]))
+                p.inDB = True
+                payments.append(p)
+            return payments
+        else:
+            return []
 
     def save(self, payment):
         # Type verify
         if type(payment) != Payment:
             raise TypeError('the entity should be only Payment type')
-        # Id verify
-        if len(self._payments) != 0:
-            for p in self._payments:
-                if payment == p:
-                    raise AttributeError(
-                        'a Payment object with this id already exists')
-        self._payments.append(payment)
+        # Save object data
+        if payment.inDB == False:
+            payment.id = self.pgds.query(f'INSERT INTO payments(method, price_id)\
+                VALUES (\'{payment.method}\', {payment.volume.id})\
+                RETURNING id')[0][0]
+            payment.inDB = True
+        elif payment.inDB:
+            self.pgds.query(f'UPDATE payments\
+                SET method = \'{payment.method}\', price_id = {payment.volume.id}, \
+                WHERE id = {payment.id}')
 
-    def save_many(self, payments_list):
-        # checking payments_list type
-        if type(payments_list) != list:
-            raise TypeError('payments you want save should be in the list')
-        # checking object quantity
-        if len(payments_list) in [0, 1]:
-            l = len(payments_list)
+    def save_many(self, *payments):
+        # Checking object quantity
+        l = len(payments)
+        if l in [0, 1]:
             raise ValueError(f'at least 2 objects can be saved, not {l}')
-        # checking objects type
-        for i in range(len(payments_list)):
-            if type(payments_list[i]) != Payment:
-                raise TypeError(
-                    f'object with index {i} is not a Payment type')
-        # checking objects id's
-        for payment in payments_list:
-            for p in self._payments:
-                if payment == p:
-                    raise AttributeError(
-                        'a Payment object with this id already exists')
-        self._payments.extend(payments_list)
+        # Checking objects type
+        for i in range(len(payments)):
+            if type(payments[i]) != Payment:
+                raise TypeError(f'object number {i+1} is not a Payment type')
+        # Save objects data
+        for payment in payments:
+            if payment.inDB == False:
+                payment.id = self.pgds.query(f'INSERT INTO payments(method, price_id)\
+                    VALUES (\'{payment.method}\', {payment.volume.id})\
+                    RETURNING id')[0][0]
+                payment.inDB = True
+            elif payment.inDB:
+                self.pgds.query(f'UPDATE payments\
+                    SET method = \'{payment.method}\', price_id = {payment.volume.id}, \
+                    WHERE id = {payment.id}')
 
-    def overwrite(self, payments_list):
-        # checking payments_list type
-        if type(payments_list) != list:
-            raise TypeError(
-                'payments you want overwrite should be in the list')
-        # checking objects type
-        for i in range(len(payments_list)):
-            if type(payments_list[i]) != Payment:
-                raise TypeError(
-                    f'object with index {i} is not a Payment type')
-        # checking objects id's
-        for payment in payments_list:
-            for p in self._money:
-                if payment == p:
-                    raise AttributeError(
-                        'a Payment object with this id already exists')
-        self._payments = payments_list
-
-    def findById(self, id_, showMode=True):
-        # check type
+    def findById(self, id_):
+        # Checking type
         if type(id_) != int:
             raise TypeError('id must be int type')
         # search and remove
-        for payment in self._payments:
-            if payment.id == id_:
-                if showMode:
-                    return f"\n{'-'*10}\n" + f'Payment found by id [{id_}]:' + str(payment) + f"\n{'-'*10}\n"
-                else:
-                    return payment
-        if showMode:
-            return f"\n{'-'*10}\n" + f'Payment found by id [{id_}]:' + '\n\nNothing was found' + f"\n{'-'*10}\n"
-        else:
-            return payment
+        data = self.pgds.query(f'SELECT * FROM payments WHERE id = {id_}')
+        if len(data) > 0:
+            from .Money import MoneyRepositoryFactory
+            mrf = MoneyRepositoryFactory(self.pgds)
+            p = self.getPayment(data[0][0], data[0][1], mrf.findById(data[0][2]))
+            p.inDB = True
+            return p
 
     def deleteById(self, id_):
-        # check type
+        # Checking type
         if type(id_) != int:
             raise TypeError('id must be int type')
-        # search and remove
-        for payment in self._payments:
-            if id_ == payment.id:
-                self._payments.remove(payment)
-    
-    def findMethod(self, method, showMode=True):
-        # check type
-        pass
-
-    def findByMethod(self, method, showMode=True):
-        # check type
-        if type(method) != str:
-            raise TypeError('method must be str type')
-        # With a incomplete match with the method
-        found = []
-        for payment in self._payments:
-            for m in payment.method:
-                if method in m:
-                    found.append(payment)
-        if len(found) != 0:
-            if showMode:
-                out = ''
-                for c in found:
-                    out = out + str(c)
-                return f"\n{'-'*10}\n" + f'Payments found by method keyword \"{method}\":' + out + f"\n{'-'*10}\n"
-            else:
-                return found
-        # With a complete match with the method
-        for payment in self._payments:
-            for m in payment.method:
-                if method == m:
-                    if showMode:
-                        return f"\n{'-'*10}\n" + f'Found Payment with method \"{method}\":' + str(payment) + f"\n{'-'*10}\n"
-                    else:
-                        return found
-        if showMode:
-            return f"\n{'-'*10}\n" + f'Found Payment with method \"{method}\":' + '\n\nNothing was found' + f"\n{'-'*10}\n"
-        else:
-            return found
-    
-    def findByVolume(self, moneyId, showMode=True):
-        # check type
-        if type(moneyId) != int:
-            raise TypeError('money id must be int type')
-        # search
-        found = []
-        for payment in self._payments:
-            if payment.volume.id == moneyId:
-                found.append(payment)
-        # output
-        if showMode:
-            if len(found) == 0:
-                return f"\n{'-'*10}\n" + f'Payments found by volume with money id [{moneyId}]:' + f'\n\nNothing was found' + f"\n{'-'*10}\n"
-            else:
-                out = ''
-                for payment in found:
-                    out = out + str(payment)
-                return f"\n{'-'*10}\n" + f'Payments found by volume with money id [{moneyId}]:' + out + f"\n{'-'*10}\n"
-        else:
-            return found
+        # Delete data
+        self.pgds.query(f'DELETE FROM payments WHERE id = {id_}')

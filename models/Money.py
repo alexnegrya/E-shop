@@ -1,74 +1,46 @@
 class Money:
-    __ids = []
-
-    def __init__(self, amount, currencyId, currency=None):
-        self.id = self.__get_id()
+    def __init__(self, id_, amount, currencyCharCode):
+        self.id = id_
+        self.inDB = False
         self.amount = amount
-        self.currencyId = currencyId
-        self.currency = currency
-
-    def __get_id(self):
-        from random import randint
-        ID = ''
-        for v in range(randint(4, 6)):
-            ID = ID + str(randint(0, 9))
-        return int(ID)
-
-    def __check_id(self, id_):
-        if id_ not in self.__ids:
-            if id_ < 1 or id_ > 1000000:
-                raise ValueError(
-                    'id must be greater then 0 and lesser then 1000000')
-            elif type(id_) != int:
-                raise TypeError('id must be an integer')
-            else:
-                return True
-        else:
-            return False
+        self.currencyCharCode = currencyCharCode
 
     def __str__(self):
         title = f"--- Money ---"
-        id = f"Id: {self.id}"
+        id_ = f'Id: {self.id}'
+        inDB = f'In DB: {self.inDB}'
         amount = f'Amount: {self.amount}'
-        currencyId = f'Currency id: {self.currencyId}'
-        out = f'\n\n{title}\n{id}\n{amount}\n{currencyId}\n\n'
+        currencyCharCode = f'Currency: {self.currencyCharCode}'
+        out = f'\n\n{title}\n{id_}\n{inDB}\n{amount}\n{currencyCharCode}\n\n'
         return out
 
     def __repr__(self):
-        return str(self)
+        return f'<<{[self.id, self.inDB, self.amount, self.currencyCharCode]}>>'
 
     def __setattr__(self, name, value):
         if name == 'id':
-            if self.__check_id(value):
+            if self.inDB == False:
+                if type(value) == int:
+                    object.__setattr__(self, name, value)
+                else:
+                    raise TypeError('id must have an int value')
+        elif name == 'inDB':
+            if value in (True, False):
                 object.__setattr__(self, name, value)
             else:
-                while True:
-                    if value == self.id:
-                        if self.__check_id(value):
-                            self.id = self.__get_id()
-                    else:
-                        break
-                object.__setattr__(self, name, value)
-        elif name == '__ids':
-            raise AttributeError('changing this attribute is not allowed')
+                raise TypeError('value for inDB attribute must be True or False only')
         elif name == 'amount':
             if type(value) not in (int, float):
                 raise TypeError('amount must be int or float type')
             else:
                 object.__setattr__(self, name, value)
-        elif name == 'currencyId':
-            if type(value) not in [int, str]:
-                raise TypeError('wrong type of quantity/itemId attribute')
+        elif name == 'currencyCharCode':
+            if type(value) != str:
+                raise TypeError('wrong currencyCharCode type, it must be only str')
             else:
                 object.__setattr__(self, name, value)
         else:
             object.__setattr__(self, name, value)
-
-    def __getattr__(self, name):
-        if name == 'id':
-            object.__getattribute__(self, str(name))
-        elif name == '__ids':
-            return tuple(self.__ids)
 
     def __eq__(self, other):
         if type(other) == Money:
@@ -79,171 +51,92 @@ class Money:
 
 
 class MoneyRepositoryFactory:
-    def __init__(self):
-        self._lastCreatedId = 0
-        self._money = []
+    def __init__(self, pgds):
+        self.pgds = pgds
 
     def __str__(self):
-        if len(self._money) != 0:
+        data = self.pgds.query('SELECT * FROM money')
+        if len(data) != 0:
+            money = []
+            for row in data:
+                m = self.getMoney(row[0], row[1], row[2])
+                m.inDB = True
+                money.append(m)
             out = ''
-            for money in self._money:
-                out = out + str(money)
+            for obj in money:
+                out = out + str(obj)
         else:
-            out = '\nThere are no money here\n'
+            out = '\nNo money here\n'
         return out
 
     def __repr__(self):
-        return str(self)
+        return str(self.pgds.query('SELECT * FROM money'))
 
     # ##### Factory methods #####
-    def getMoney(self, amount, currencyId):
-        obj = Money(amount, currencyId)
-        self._lastCreatedId += 1
-        obj.id = self._lastCreatedId
-        self._money.append(obj)
-        return obj
-
-    def get_last_id(self):
-        return f"\n{'-'*10}\n" + 'Last created object id: ' + str(self._lastCreatedId) + f"\n{'-'*10}\n"
+    def getMoney(self, id_, amount, currencyCharCode):
+        return Money(id_, amount, currencyCharCode)
 
     # ##### Repository methods #####
     def all(self):
-        return tuple(self._money)
+        res = self.pgds.query('SELECT * FROM money')
+        if len(res) > 0:
+            money = []
+            for row in res:
+                m = self.getMoney(row[0], row[1], row[2])
+                m.inDB = True
+                money.append(m)
+            return money
+        else:
+            return []
 
     def save(self, money):
         # Type verify
         if type(money) != Money:
             raise TypeError('the entity should be only Money type')
-        # Id verify
-        if len(self._money) != 0:
-            for m in self._money:
-                if money == m:
-                    raise AttributeError(
-                        'a Money object with this id already exists')
-        self._money.append(money)
+        # Save object data
+        if money.inDB == False:
+            money.id = self.pgds.query(f'INSERT INTO money(amount, currency_char_code)\
+                VALUES ({money.amount}, \'{money.currencyCharCode}\') RETURNING id')[0][0]
+            money.inDB = True
+        elif money.inDB:
+            self.pgds.query(f'UPDATE money\
+                SET amount = {money.amount}, currency_char_code = \'{money.currencyCharCode}\'\
+                WHERE id = {money.id}')
 
-    def save_many(self, money_list):
-        # checking money_list type
-        if type(money_list) != list:
-            raise TypeError('money you want save should be in the list')
-        # checking object quantity
-        if len(money_list) in [0, 1]:
-            l = len(money_list)
+    def save_many(self, *money):
+        # Checking object quantity
+        l = len(money)
+        if l in [0, 1]:
             raise ValueError(f'at least 2 objects can be saved, not {l}')
-        # checking objects type
-        for i in range(len(money_list)):
-            if type(money_list[i]) != Money:
-                raise TypeError(
-                    f'object with index {i} is not a Money type')
-        # checking objects id's
-        for money in money_list:
-            for m in self._money:
-                if money.id == m.id:
-                    raise AttributeError(
-                        'a Money object with this id already exists')
-        self._money.extend(money_list)
+        # Checking objects type
+        for i in range(len(money)):
+            if type(money[i]) != Money:
+                raise TypeError(f'object number {i+1} is not a Money type')
+        # Save objects data
+        for m in money:
+            if m.inDB == False:
+                m.id = self.pgds.query(f'INSERT INTO money(amount, currency_char_code)\
+                    VALUES ({m.amount}, \'{m.currencyCharCode}\') RETURNING id')[0][0]
+                m.inDB = True
+            elif m.inDB:
+                self.pgds.query(f'UPDATE money\
+                    SET amount = {m.amount}, currency_char_code = \'{m.currencyCharCode}\'\
+                    WHERE id = {m.id}')
 
-    def overwrite(self, money_list):
-        # checking money_list type
-        if type(money_list) != list:
-            raise TypeError(
-                'money you want overwrite should be in the list')
-        # checking objects type
-        for i in range(len(money_list)):
-            if type(money_list[i]) != Money:
-                raise TypeError(
-                    f'object with index {i} is not a Money type')
-        # checking objects id's
-        for money in money_list:
-            for m in self._money:
-                if money.id == m.id:
-                    raise AttributeError(
-                        'a Money object with this id already exists')
-        self._money = money_list
-
-    def findById(self, id_, showMode=True):
-        # check type
+    def findById(self, id_):
+        # Checking type
         if type(id_) != int:
             raise TypeError('id must be int type')
-        # search and remove
-        for money in self._money:
-            if money.id == id_:
-                if showMode:
-                    return f"\n{'-'*10}\n" + f'Money found by id [{id_}]:' + str(money) + f"\n{'-'*10}\n"
-                else:
-                    return money
-        if showMode:
-            return f"\n{'-'*10}\n" + f'Money found by id [{id_}]:' + '\n\nNothing was found' + f"\n{'-'*10}\n"
-        else:
+        # Search and return
+        data = self.pgds.query(f'SELECT * FROM money WHERE id = {id_}')
+        if len(data) != 0:
+            money = self.getMoney(data[0][0], data[0][1], data[0][2])
+            money.inDB = True
             return money
 
-    def findByAmount(self, amount, showMode=True):
-        # check type
-        if type(amount) != int:
-            raise TypeError('amount must be int type')
-        # search
-        found = []
-        for money in self._money:
-            if money.amount == amount:
-                found.append(money)
-        if len(found) != 0:
-            if showMode:
-                return f"\n{'-'*10}\nFound money with amount [{amount}]: \n{found}\n{'-'*10}"
-            else:
-                return found
-        else:
-            if showMode:
-                return f"\n{'-'*10}\nFound money with amount [{amount}]: \nNothing was found\n{'-'*10}"
-            else:
-                return found
-
-    def findByAmountRange(self, amountMin, amountMax, showMode=True):
-        # check type
-        for amount in [amountMin, amountMax]:
-            if type(amount) != int:
-                raise TypeError('amount ranges must be int type')
-        # search
-        found = []
-        for money in self._money:
-            if money.amount >= amountMin\
-                    and money.amount <= amountMax:
-                found.append(money)
-        if len(found) != 0:
-            if showMode:
-                return f"\n{'-'*10}\nFound money in amount range [{amountMin}-{amountMax}]: \n{found}\n{'-'*10}"
-            else:
-                return found
-        else:
-            if showMode:
-                return f"\n{'-'*10}\nFound money in amount range [{amountMin}-{amountMax}]: \nNothing was found\n{'-'*10}"
-            else:
-                return found
-
-    def findByCurrencyId(self, currencyId, showMode=True):
-        # check type
-        if type(currencyId) != int:
-            raise TypeError('currencyId must be int type')
-        # search
-        found = []
-        for money in self._money:
-            if money.currencyId == currencyId:
-                found.append(money)
-        if len(found) != 0:
-            if showMode:
-                return f"\n{'-'*10}\nFound money with currency id [{currencyId}]: \n{found}\n{'-'*10}"
-            else:
-                return found
-        else:
-            if showMode:
-                return f"\n{'-'*10}\nFound money with currency id [{currencyId}]: \nNothing was found\n{'-'*10}"
-            else:
-                return found
-
     def deleteById(self, id_):
-        # check type
+        # Checking type
         if type(id_) != int:
             raise TypeError('id must be int type')
-        # search and remove
-        for money in self._money:
-            if id_ == money.id:
-                self._money.remove(money)
+        # Delete data
+        self.pgds.query(f'DELETE FROM money WHERE id = {id_}')

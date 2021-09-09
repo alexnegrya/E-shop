@@ -1,79 +1,103 @@
 class Shop:
-    __ids = []
-
-    def __init__(self, workingHours, addressId):
-        self.id = self.__get_id()
+    def __init__(self, id_, workingHours, addressId):
+        self.id = id_
+        self.inDB = False
         self.workingHours = workingHours
         self.addressId = addressId
-
-    def __get_id(self):
-        from random import randint
-        ID = ''
-        for v in range(randint(4, 6)):
-            ID = ID + str(randint(0, 9))
-        return int(ID)
-
-    def __check_id(self, id_):
-        if id_ not in self.__ids:
-            if id_ < 1 or id_ > 1000000:
-                raise ValueError(
-                    'id must be greater then 0 and lesser then 1000000')
-            elif type(id_) != int:
-                raise TypeError('id must be an integer')
-            else:
-                return True
-        else:
-            return False
 
     def __str__(self):
         title = f"--- Shop ---"
         id = f"Id: {self.id}"
+        inDB = f'In DB: {self.inDB}'
         workingHours = f'Working hours: {self.workingHours}'
         addressId = f'Address id: {self.addressId}'
-        out = f'\n\n{title}\n{id}\n{workingHours}\n{addressId}\n\n'
-        return out
+        return f'\n\n{title}\n{id}\n{inDB}\n{workingHours}\n{addressId}\n\n'
 
     def __repr__(self):
-        return str(self)
+        return f'<<{[self.id, self.inDB, self.workingHours, self.addressId]}>>'
 
     def __setattr__(self, name, value):
         if name == 'id':
-            if self.__check_id(value):
+            if self.inDB == False:
+                if type(value) == int:
+                    object.__setattr__(self, name, value)
+                else:
+                    raise TypeError('id must have an int value')
+        elif name == 'inDB':
+            if value in (True, False):
                 object.__setattr__(self, name, value)
             else:
-                while True:
-                    if value == self.id:
-                        if self.__check_id(value):
-                            self.id = self.__get_id()
-                    else:
-                        break
-                object.__setattr__(self, name, value)
-        elif name == '__ids':
-            raise AttributeError('changing this attribute is not allowed')
+                raise TypeError(
+                    'value for inDB attribute must be True or False only')
         elif name == 'workingHours':
-            # Check attribute type
+            # Checking attribute type
             if type(value) != list:
                 raise TypeError('workingHours must be list type')
-            # Check objects in the list
-            for v in value:
-                # check type
-                if type(v) != int:
-                    raise TypeError('values in workingHours list must be int type')
-                # check value
-                if v < 0 or v > 24:
-                    raise ValueError(
-                        'values in workingHours list must be in int range 0-24')
             # Check workingHours list lenght
             if len(value) != 7:
                 raise TypeError(
-                    'the workingHours list should contain seven values for 7 days of the week')
-            # Create dict with days and working hours
-            wh = {}
-            days = ['Monday', 'Tuesday', 'Wednesday',
-                'Thursday', 'Friday', 'Saturday', 'Sunday']
+                    'the workingHours list should contain seven lists for 7 days of the week')
+            # Checking lists in the workingHours list
             for i in range(len(value)):
-                wh[days[i]] = value[i]
-            value = wh
+                # Checking  type
+                if type(value[i]) != list:
+                    raise TypeError(f'object with index {i} in workingHours not is list')
+                # Checking length
+                if len(value[i]) != 2:
+                    raise ValueError(
+                        f'list with index {i} contain {len(value[i])} objects, not 2 (start work time, end work time)')
+                # Checking values in the workingHours lists
+                startWork = ''
+                endWork = ''
+                for v in range(len(value[i])):
+                    # Checking type
+                    if type(value[i][v]) != str:
+                        raise TypeError(
+                            f'list with index {i} in workingHours contain not str type object with index {v}')
+                    wrongValue = f'value with index {v} in list with index {i}'
+                    # Checking str lenght
+                    if len(value[i][v]) != 5:
+                        raise ValueError(
+                            f'{wrongValue} not contain 5 characters')
+                    # Checking format
+                    spl = value[i][v].split(':')
+                    if len(spl) != 2:
+                        raise ValueError(
+                            f'{wrongValue} must be in correct format (00:00)')
+                    if spl[0].isnumeric() == False:
+                        raise ValueError(f'{wrongValue} contain not numeric hours value')
+                    if spl[1].isnumeric() == False:
+                        raise ValueError(f'{wrongValue} contain not numeric minutes value')
+                    spl = [int(spl[0]), int(spl[1])]
+                    if len(spl[0]) < 0:
+                        raise ValueError(f'{wrongValue} has negative hours value')
+                    if len(spl[0]) > 23:
+                        raise ValueError(f'{wrongValue} has hours value more then 23')
+                    if len(spl[1]) < 0:
+                        raise ValueError(f'{wrongValue} has negative minutes value')
+                    if len(spl[1]) > 59:
+                        raise ValueError(f'{wrongValue} has minutes value more then 59')
+                    # Start work and end work time definition
+                    if v == 0:
+                        startWork = value[i][v]
+                    elif v == 1:
+                        endWork = value[i][v]
+                # Checking if end work > start work time value
+                startSpl = startWork.split(':')
+                startSpl = [int(v) for v in startSpl]
+                endSpl = endWork.split(':')
+                endSpl = [int(v) for v in endSpl]
+                if startSpl[0] >= endSpl[0] and startSpl[1] >= endSpl[1]:
+                    raise ValueError('start work time must be lesser then end work time')
+                # Appending start work and end work time definition
+                hoursDef = endSpl[0] - startSpl[0]
+                minutesDef = endSpl[1] - startSpl[1]
+                for Def in (hoursDef, minutesDef):
+                    if Def > 9:
+                        Def = str(hoursDef)
+                    else:
+                        Def = f'0{hoursDef}'
+                value[i].append(f'{hoursDef}:{minutesDef}')
             object.__setattr__(self, name, value)
         elif name == 'addressId':
             if type(value) != int:
@@ -82,12 +106,6 @@ class Shop:
                 object.__setattr__(self, name, value)
         else:
             object.__setattr__(self, name, value)
-
-    def __getattr__(self, name):
-        if name == 'id':
-            object.__getattribute__(self, str(name))
-        elif name == '__ids':
-            return tuple(self.__ids)
 
     def __eq__(self, other):
         if type(other) == Shop:
@@ -98,162 +116,103 @@ class Shop:
 
 
 class ShopRepositoryFactory:
-    __days = ['Monday', 'Tuesday', 'Wednesday',
-        'Thursday', 'Friday', 'Saturday', 'Sunday']
-
-    def __init__(self):
-        self._lastCreatedId = 0
-        self._shops = []
+    def __init__(self, pgds):
+        self.pgds = pgds
 
     def __str__(self):
-        if len(self._shops) != 0:
+        data = self.pgds.query('SELECT * FROM shops')
+        if len(data) != 0:
+            shops = []
+            for row in data:
+                workingHours = row[1]
+                for r in workingHours:
+                    r.pop(2)
+                s = self.getShop(row[0], workingHours, row[2])
+                s.inDB = True
+                shops.append(s)
             out = ''
-            for shop in self._shops:
+            for shop in shops:
                 out = out + str(shop)
         else:
-            out = '\nThere are no shops here\n'
+            out = '\nNo shops here\n'
         return out
 
     def __repr__(self):
-        return str(self)
+        return str(self.pgds.query('SELECT * FROM shops'))
 
     # ##### Factory methods #####
-    def getShop(self, workingHours, addressId):
-        obj = Shop(workingHours, addressId)
-        self._lastCreatedId += 1
-        obj.id = self._lastCreatedId
-        self._shops.append(obj)
-        return obj
-
-    def get_last_id(self):
-        return f"\n{'-'*10}\n" + 'Last created object id: ' + str(self._lastCreatedId) + f"\n{'-'*10}\n"
+    def getShop(self, id_, workingHours, addressId):
+        return Shop(id_, workingHours, addressId)
 
     # ##### Repository methods #####
     def all(self):
-        return tuple(self._shops)
+        data = self.pgds.query('SELECT * FROM shops')
+        if len(data) > 0:
+            shops = []
+            for row in data:
+                workingHours = row[1]
+                for r in workingHours:
+                    r.pop(2)
+                s = self.getShop(row[0], workingHours, row[2])
+                s.inDB = True
+                shops.append(s)
+            return shops
+        else:
+            return []
 
     def save(self, shop):
         # Type verify
         if type(shop) != Shop:
             raise TypeError('the entity should be only Shop type')
-        # Id verify
-        if len(self._shops) != 0:
-            for s in self._shops:
-                if shop == s:
-                    raise AttributeError(
-                        'a Shop object with this id already exists')
-        self._shops.append(shop)
+        # Save object data
+        wh = str(shop.workingHours).replace('[', '{')
+        wh = wh.replace(']', '}')
+        if shop.inDB == False:
+            shop.id = self.pgds.query(f'INSERT INTO shops(working_hours, address_id)\
+                VALUES ({wh}, {shop.addressId}) RETURNING id')[0][0]
+            shop.inDB = True
+        elif shop.inDB:
+            self.pgds.query(f'UPDATE shops\
+                SET working_hours = {wh}, address_id = {shop.addressId}, \
+                WHERE id = {shop.id}')
 
-    def save_many(self, shops_list):
-        # checking shops_list type
-        if type(shops_list) != list:
-            raise TypeError('shops you want save should be in the list')
-        # checking object quantity
-        if len(shops_list) in [0, 1]:
-            l = len(shops_list)
+    def save_many(self, *shops):
+        # Checking object quantity
+        l = len(shops)
+        if l in [0, 1]:
             raise ValueError(f'at least 2 objects can be saved, not {l}')
-        # checking objects type
-        for i in range(len(shops_list)):
-            if type(shops_list[i]) != Shop:
-                raise TypeError(
-                    f'object with index {i} is not a Shop type')
-        # checking objects id's
-        for shop in shops_list:
-            for s in self._shops:
-                if shop == s:
-                    raise AttributeError(
-                        f'a Shop object with id {shop.id} already exists')
-        self._shops.extend(shops_list)
+        # Checking objects type
+        for i in range(len(shops)):
+            if type(shops[i]) != Shop:
+                raise TypeError(f'object number {i+1} is not a Shop type')
+        # Save objects data
+        for shop in shops:
+            wh = str(shop.workingHours).replace('[', '{')
+            wh = wh.replace(']', '}')
+            if shop.inDB == False:
+                shop.id = self.pgds.query(f'INSERT INTO shops(working_hours, address_id)\
+                    VALUES ({wh}, {shop.addressId}) RETURNING id')[0][0]
+                shop.inDB = True
+            elif shop.inDB:
+                self.pgds.query(f'UPDATE shops\
+                    SET working_hours = {wh}, address_id = {shop.addressId}, \
+                    WHERE id = {shop.id}')
 
-    def save_many(self, shops_list):
-        # checking shops_list type
-        if type(shops_list) != list:
-            raise TypeError('shops you want save should be in the list')
-        # checking object quantity
-        if len(shops_list) in [0, 1]:
-            l = len(shops_list)
-            raise ValueError(f'at least 2 objects can be saved, not {l}')
-        # checking objects type
-        for i in range(len(shops_list)):
-            if type(shops_list[i]) != Shop:
-                raise TypeError(
-                    f'object with index {i} is not a Shop type')
-        # checking objects id's
-        for shop in shops_list:
-            for s in self._shops:
-                if shop == s:
-                    raise AttributeError(
-                        f'a Shop object with id {shop.id} already exists')
-        self._shops = shops_list
-
-    def findById(self, id_, showMode=True):
-        for shop in self._shops:
-            if shop.id == id_:
-                if showMode:
-                    return f"\n{'-'*10}\n" + f'Shop found by id [{id_}]:' + str(shop) + f"\n{'-'*10}\n"
-                else:
-                    return shop
-        if showMode:
-            return f"\n{'-'*10}\n" + f'Shop found by id [{id_}]:' + '\n\nNothing was found' + f"\n{'-'*10}\n"
-        else:
-            return shop
+    def findById(self, id_):
+        # Checking type
+        if type(id_) != int:
+            raise TypeError('id must be int')
+        # Search and return
+        data = self.pgds.query(f'SELECT * FROM shops WHERE id = {id_}')
+        if len(data) > 0:
+            wh = [[v[0], v[1]] for v in data[0][1]]
+            s = self.getShop(data[0][0], wh, data[0][2])
+            s.inDB = True
+            return s
 
     def deleteById(self, id_):
-        for shop in self._shops:
-            if id_ == shop.id:
-                self._shops.remove(shop)
-
-    def getDays(self):
-        return self.__days.copy()
-
-    def findByWorkingHours(self, day, hours, showMode=True):
-        # Check arguments types
-        if type(day) != str:
-            raise TypeError('day must be str type')
-        if type(hours) != int:
-            raise TypeError('hours must be int type')
-        # Check day correctness
-        correct = False
-        for d in self.__days:
-            if day == d:
-                correct = True
-        if not correct:
-            raise TypeError('this day doesn\'t exist (call \"getDays\" method to get all days)')
-        # Search
-        found = []
-        for shop in self._shops:
-            for d in shop.workingHours:
-                if d == day and shop.workingHours[day] == hours:
-                    found.append(shop)
-        # Output
-        if len(found) != 0:
-            if showMode:
-                return f"\n{'-'*10}\nShops with {hours} working hours on {day} were found: \n{found}\n{'-'*10}"
-            else:
-                return found
-        else:
-            if showMode:
-                return f"\n{'-'*10}\nShops with {hours} working hours on {day} were found: \nNothing was found\n{'-'*10}"
-            else:
-                return found
-
-    def findByAddressId(self, addressId, showMode=True):
-        # check type
-        if type(addressId) != int:
-            raise TypeError('addressId must be int type')
-        # search
-        found = []
-        for shop in self._shops:
-            if shop.addressId == addressId:
-                found.append(shop)
-        # output
-        if len(found) != 0:
-            if showMode:
-                return f"\n{'-'*10}\nFound shops with address id [{addressId}]: \n{found}\n{'-'*10}"
-            else:
-                return found
-        else:
-            if showMode:
-                return f"\n{'-'*10}\nFound shops with address id [{addressId}]: \nNothing was found\n{'-'*10}"
-            else:
-                return found
+        # Checking type
+        if type(id_) != int:
+            raise TypeError('id must be int value')
+        # Delete data
+        self.pgds.query(f'DELETE FROM shops WHERE id = {id_}')

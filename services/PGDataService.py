@@ -19,4 +19,9 @@ class PGDataService:
         cursor = self.conn.cursor()
         cursor.execute(query)
         self.conn.commit()
-        return cursor.fetchall()
+        if query.startswith('SELECT') or query.startswith('select')\
+            or 'returning' in query or 'RETURNING' in query:
+            res = cursor.fetchall()
+        else:
+            res = []
+        return res

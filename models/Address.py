@@ -37,7 +37,7 @@ class Address:
             if type(value) != str:
                 raise TypeError('value must be a string')
             elif value == '':
-                raise NameError('value cannot be an empty string')
+                raise ValueError('value cannot be an empty string')
             else:
                 # Spliting name by letters
                 splited = []
@@ -53,27 +53,13 @@ class Address:
                 # Checking name for the same letters only
                 for i in range(len(repeated_numbers)):
                     if repeated_numbers[splited[i]] == len(value):
-                        raise NameError(
+                        raise ValueError(
                             'the value contains only the same letters')
                 object.__setattr__(self, name, value)
         elif name == 'number':
             if type(value) != int and type(value) != str:
                 raise TypeError('wrong number type')
             if type(value) == str:
-                # Checking value for emptiness
-                if value in ('', ' '):
-                    raise ValueError('value must not be empty')
-                # Spliting str by characters
-                splited = []
-                for i in range(len(value)):
-                    splited.append(value[i])
-                # Checking str for characters repition
-                repeated_numbers = {}
-                for i in range(len(splited)):
-                    if splited[i] not in repeated_numbers:
-                        repeated_numbers[splited[i]] = 1
-                    else:
-                        repeated_numbers[splited[i]] += 1
                 # Checking str for the content of letters
                 if value.isupper() or value.islower():
                     raise ValueError('value must not contain letters')

@@ -1,4 +1,6 @@
 import psycopg2
+import re
+
 
 class PGDataService:
     def __init__(self, host, database, login, pass_):
@@ -15,13 +17,14 @@ class PGDataService:
             password=self.password
         )
     
-    def query(self, query):
+    def format_query_string(query: str):
+        return query.replace('None', 'null')
+    
+    def query(self, query: str):
         cursor = self.conn.cursor()
-        cursor.execute(query)
+        query = self.format_query_string(query)
+        if len(re.findall(';', query)) <= 1: cursor.execute(query)
+        else: cursor.executemany(query)
         self.conn.commit()
-        if query.startswith('SELECT') or query.startswith('select')\
-            or 'returning' in query or 'RETURNING' in query:
-            res = cursor.fetchall()
-        else:
-            res = []
-        return res
+        q = query.lower()
+        return cursor.fetchall() if q.startswith('select') or 'returning' in q else []

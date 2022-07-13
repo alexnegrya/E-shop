@@ -1,10 +1,9 @@
-class TestDataService:
-    def __init__(self):
-        self.products = None
+import requests
+import json
 
-    def getTestProducts(self, quantity=10):
-        import requests
-        import json
+
+class TestDataService:
+    def create_test_products(self, quantity=10):
         url = f'https://fakestoreapi.com/products?limit={quantity}'
         res = requests.get(url)
         if res.status_code == 200:
@@ -14,8 +13,4 @@ class TestDataService:
         else:
             raise SystemExit(f'Unable to connect: connection error {res.status_code}')
 
-    def __str__(self):
-        if self.products == None:
-            return '\nNothing here\n'
-        else:
-            return f'\nProducts: {self.products}\n'
+    def __str__(self): return '\nNothing here\n' if self.products == None else f'\nProducts: {self.products}\n'

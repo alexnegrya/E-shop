@@ -1,9 +1,6 @@
-# __pycache__ folders
-__pycache__
-models/__pycache__
-services/__pycache__
-ui/__pycache__
-gui/__pycache__
+# Python folders
+__pycache__/
+*env/
 
 # IDE folders
 .vscode

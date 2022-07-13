@@ -1,5 +1,8 @@
-class Service:
-    def __init__(self, id_, name, price, description='null'):
+from db.templates import *
+
+
+class Service(Model):
+    def __init__(self, id_, name, price, description=None):
         self.id = id_
         self.inDB = False
         self.name = name
@@ -19,9 +22,7 @@ class Service:
     def __setattr__(self, name, value):
         if name == 'id':
             if self.inDB == False:
-                if type(value) == int:
-                    object.__setattr__(self, name, value)
-                else:
+                if type(value) != int:
                     raise TypeError('id must have an int value')
         elif name == 'inDB':
             if value in (True, False):
@@ -62,26 +63,22 @@ class Service:
         else:
             object.__setattr__(self, name, value)
 
-    def __eq__(self, other):
-        if type(other) == Service:
-            if self.id == other.id:
-                return True
-            else:
-                return False
+    def __eq__(self, other): return self.id == other.id if type(other) == Service else False
 
 
-class ServiceRepositoryFactory:
+class ServiceRepositoryFactory(ModelRepositoryFactory):
     def __init__(self, pgds):
         self.pgds = pgds
+
+        from .Money import MoneyRepositoryFactory
+        self.mrf = MoneyRepositoryFactory(self.pgds)
 
     def __str__(self):
         data = self.pgds.query('SELECT * FROM services')
         if len(data) != 0:
-            from .Money import MoneyRepositoryFactory
-            mrf = MoneyRepositoryFactory(self.pgds)
             services = []
             for row in data:
-                s = self.getService(row[0], row[1], mrf.findById(row[3]), row[2])
+                s = self.get_service(row[0], row[1], self.mrf.find_by_id(row[3]), row[2])
                 s.inDB = True
                 services.append(s)
             out = ''
@@ -95,18 +92,16 @@ class ServiceRepositoryFactory:
         return str(self.pgds.query('SELECT * FROM services'))
 
     # ##### Factory methods #####
-    def getService(self, id_, name, price, description='null'):
+    def get_service(self, id_, name, price, description='null'):
         return Service(id_, name, price, description)
 
     # ##### Repository methods #####
     def all(self):
         data = self.pgds.query('SELECT * FROM services')
         if len(data) > 0:
-            from .Money import MoneyRepositoryFactory
-            mrf = MoneyRepositoryFactory(self.pgds)
             services = []
             for row in data:
-                s = self.getService(row[0], row[1], mrf.findById(row[3]), row[2])
+                s = self.get_service(row[0], row[1], self.mrf.find_by_id(row[3]), row[2])
                 s.inDB = True
                 services.append(s)
             return services
@@ -115,56 +110,38 @@ class ServiceRepositoryFactory:
 
     def save(self, service):
         # Type verify
-        if type(service) != Service:
-            raise TypeError('the entity should only be Service type')
+        if type(service) != Service: raise TypeError('the entity should only be Service type')
         # Save object data
+        description = "'" + service.description + "'" if service.description != None else "null"
         if service.inDB == False:
             service.id = self.pgds.query(f'INSERT INTO services(name, description, price_id)\
-                VALUES (\'{service.name}\', \'{service.description}\', {service.price.id})\
+                VALUES (\'{service.name}\', {description}, {service.price.id})\
                 RETURNING id')[0][0]
             service.inDB = True
         elif service.inDB:
             self.pgds.query(f'UPDATE services\
-                SET name = \'{service.name}\', description = \'{service.description}\', \
+                SET name = \'{service.name}\', description = {description}, \
                 price_id = {service.price.id} WHERE id = {service.id}')
 
     def save_many(self, *services):
         # Checking object quantity
         l = len(services)
-        if l in [0, 1]:
-            raise ValueError(f'at least 2 objects can be saved, not {l}')
+        if l in [0, 1]: raise ValueError(f'at least 2 objects can be saved, not {l}')
         # Checking objects type
-        for i in range(len(services)):
+        for i in range(l):
             if type(services[i]) != Service:
                 raise TypeError(f'object number {i+1} is not a Service type')
         # Save objects data
-        for service in services:
-            if service.inDB == False:
-                service.id = self.pgds.query(f'INSERT INTO services(name, description, price_id)\
-                    VALUES (\'{service.name}\', \'{service.description}\', {service.price.id})\
-                    RETURNING id')[0][0]
-                service.inDB = True
-            elif service.inDB:
-                self.pgds.query(f'UPDATE services\
-                    SET name = \'{service.name}\', description = \'{service.description}\', \
-                    price_id = {service.price.id} WHERE id = {service.id}')
+        [self.save(service) for service in services]
 
-    def findById(self, id_):
-        # Checking type
-        if type(id_) != int:
-            raise TypeError('id must be int type')
-        # Search and return
+    def find_by_id(self, id_):
+        if type(id_) != int: raise TypeError('id must be int type')
         data = self.pgds.query(f'SELECT * FROM services WHERE id = {id_}')
         if len(data) > 0:
-            from .Money import MoneyRepositoryFactory
-            mrf = MoneyRepositoryFactory(self.pgds)
-            s = self.getService(data[0][0], data[0][1], mrf.findById(data[0][3]), data[0][2])
+            s = self.get_service(data[0][0], data[0][1], self.mrf.find_by_id(data[0][3]), data[0][2])
             s.inDB = True
             return s
 
-    def deleteById(self, id_):
-        # Checking type
-        if type(id_) != int:
-            raise TypeError('id must be int type')
-        # Delete data
+    def delete_by_id(self, id_):
+        if type(id_) != int: raise TypeError('id must be int type')
         self.pgds.query(f'DELETE FROM services WHERE id = {id_}')

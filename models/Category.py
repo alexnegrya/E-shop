@@ -1,9 +1,15 @@
-class Category:
+from db.templates import *
+from datetime import datetime
+
+
+class Category(Model):
     def __init__(self, id_, name, parentCategoryId=None):
         self.inDB = False
         self.id = id_
         self.name = name
         self.parentCategoryId = parentCategoryId
+        self.created = datetime.now()
+        self.updated = None
     
     def __str__(self):
         title = f"--- Category \"{self.name}\" ---"
@@ -23,14 +29,10 @@ class Category:
     def __setattr__(self, name, value):
         if name == 'id':
             if self.inDB == False:
-                if type(value) == int:
-                    object.__setattr__(self, name, value)
-                else:
+                if type(value) != int:
                     raise TypeError('id must have an int value')
         elif name == 'inDB':
-            if value in (True, False):
-                object.__setattr__(self, name, value)
-            else:
+            if value not in (True, False):
                 raise TypeError(
                     'value for inDB attribute must be True or False only')
         elif name == 'name':
@@ -65,20 +67,15 @@ class Category:
         elif name == 'parentCategoryId':
             if type(value) != int and value != None:
                 raise TypeError('wrong parent Category id')
-            else:
-                object.__setattr__(self, name, value)
-        else:
-            object.__setattr__(self, name, value)
+        elif name in ('created', 'updated'):
+            if type(value) != datetime: raise TypeError('created or updated must have datetime object value')
+        self.__setattr__('updated', datetime.now())
+        object.__setattr__(self, name, value)
 
-    def __eq__(self, other):
-        if type(other) == Category:
-            if self.id == other.id:
-                return True
-            else:
-                return False
+    def __eq__(self, other): return self.id == other.id if type(other) == Category else False
 
 
-class CategoryRepositoryFactory:
+class CategoryRepositoryFactory(ModelRepositoryFactory):
     def __init__(self, pgds):
         self.pgds = pgds
 
@@ -87,7 +84,7 @@ class CategoryRepositoryFactory:
         if len(res) > 0:
             categories = []
             for row in res:
-                c = self.getCategory(row[0], row[1], row[2])
+                c = self.get_category(row[0], row[1], row[2])
                 c.inDB = True
                 categories.append(c)
             out = ''
@@ -101,7 +98,7 @@ class CategoryRepositoryFactory:
         return str(self.pgds.query('SELECT * FROM categories'))
 
     # ##### Factory methods #####
-    def getCategory(self, id_, name, parentCategoryId=None):
+    def get_category(self, id_, name, parentCategoryId=None):
         return Category(id_, name, parentCategoryId)
 
     # ##### Repository methods #####
@@ -110,7 +107,7 @@ class CategoryRepositoryFactory:
         if len(res) > 0:
             categories = []
             for row in res:
-                categories.append(self.getCategory(row[0], row[1], row[2]))
+                categories.append(self.get_category(row[0], row[1], row[2]))
             return categories
         else:
             return []
@@ -127,13 +124,13 @@ class CategoryRepositoryFactory:
             PcId = pcId
         if category.inDB == False:
             category.id = self.pgds.query(f'INSERT INTO categories(name, created, parent_category_id)\
-                VALUES (\'{category.name}\', now(), {PcId}) RETURNING id')[0][0]
+                VALUES (\'{category.name}\', {category.created}, {PcId}) RETURNING id')[0][0]
             category.inDB = True
         elif category.inDB:
             self.pgds.query(f'''
                 UPDATE categories
                 SET name = \'{category.name}\',
-                    updated = now(),
+                    updated = {category.updated},
                     parent_category_id = {PcId}
                 WHERE id = {category.id}
             ''')
@@ -141,47 +138,23 @@ class CategoryRepositoryFactory:
     def save_many(self, *categories):
         # Checking object quantity
         l = len(categories)
-        if l in [0, 1]:
-            raise ValueError(f'at least 2 objects can be saved, not {l}')
+        if l in [0, 1]: raise ValueError(f'at least 2 objects can be saved, not {l}')
         # Checking objects type
-        for i in range(len(categories)):
+        for i in range(l):
             if type(categories[i]) != Category:
                 raise TypeError(f'object number {i+1} is not a Category type')
         # Save objects data
-        for category in categories:
-            pcId = category.parentCategoryId
-            if pcId == None:
-                PcId = 'null'
-            else:
-                PcId = pcId
-            if category.inDB == False:
-                category.id = self.pgds.query(f'INSERT INTO categories(name, created, parent_category_id)\
-                VALUES (\'{category.name}\', now(), {PcId}) RETURNING id')[0][0]
-                category.inDB = True
-            elif category.inDB:
-                self.pgds.query(f'''
-                    UPDATE categories
-                    SET name = \'{category.name}\',
-                        updated = now(),
-                        parent_category_id = {PcId}
-                    WHERE id = {category.id}
-                ''')
+        [self.save(category) for category in categories]
     
-    def findById(self, id_):
-        # Checking type
-        if type(id_) != int:
-            raise TypeError('id must be int type')
-        # Search
+    def find_by_id(self, id_):
+        if type(id_) != int: raise TypeError('id must be int type')
         res = self.pgds.query(f'SELECT id, name, parent_category_id FROM categories WHERE id = {id_}')
         if len(res) != 0:
             data = res[0]
-            c = self.getCategory(data[0], data[1], data[2])
+            c = self.get_category(data[0], data[1], data[2])
             c.inDB = True
             return c
 
-    def deleteById(self, id_):
-        # Checking type
-        if type(id_) != int:
-            raise TypeError('id must be int type')
-        # Delete object data
+    def delete_by_id(self, id_):
+        if type(id_) != int: raise TypeError('id must be int type')
         self.pgds.query(f'DELETE FROM categories WHERE id = {id_}')

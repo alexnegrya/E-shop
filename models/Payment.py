@@ -1,4 +1,7 @@
-class Payment:
+from db.templates import *
+
+
+class Payment(Model):
     def __init__(self, id_, method, volume):
         self.id = id_
         self.inDB = False
@@ -13,46 +16,31 @@ class Payment:
         volume = f'Volume: {self.volume}'
         return f'\n\n{title}\n{id}\n{inDB}\n{method}\n{volume}\n\n'
 
-    def __repr__(self):
-        return f'<<{[self.id, self.inDB, self.method, self.volume]}>>'
+    def __repr__(self): return f'<<{[self.id, self.inDB, self.method, self.volume]}>>'
 
     def __setattr__(self, name, value):
         if name == 'id':
             if self.inDB == False:
-                if type(value) == int:
-                    object.__setattr__(self, name, value)
-                else:
+                if type(value) != int:
                     raise TypeError('id must have an int value')
         elif name == 'inDB':
-            if value in (True, False):
-                object.__setattr__(self, name, value)
-            else:
+            if value not in (True, False):
                 raise TypeError(
                     'value for inDB attribute must be True or False only')
         elif name == 'method':
             if type(value) != str:
                 raise TypeError('method must be str type')
-            object.__setattr__(self, name, value)
         elif name == 'volume':
             from .Money import Money
             if type(value) != Money:
                 raise TypeError('volume must be Money type')
-            else:
-                object.__setattr__(self, name, value)
-        else:
-            object.__setattr__(self, name, value)
+        object.__setattr__(self, name, value)
 
-    def __eq__(self, other):
-        if type(other) == Payment:
-            if self.id == other.id:
-                return True
-            else:
-                return False
+    def __eq__(self, other): return self.id == other.id if type(other) == Payment else False
 
 
-class PaymentRepositoryFactory:
-    def __init__(self, pgds):
-        self.pgds = pgds
+class PaymentRepositoryFactory(ModelRepositoryFactory):
+    def __init__(self, pgds): self.pgds = pgds
 
     def __str__(self):
         data = self.pgds.query('SELECT * FROM payments')
@@ -61,7 +49,7 @@ class PaymentRepositoryFactory:
             mrf = MoneyRepositoryFactory(self.pgds)
             payments = []
             for row in data:
-                p = self.getPayment(row[0], row[1], mrf.findById(row[2]))
+                p = self.get_payment(row[0], row[1], mrf.find_by_id(row[2]))
                 p.inDB = True
                 payments.append(p)
             out = ''
@@ -71,12 +59,10 @@ class PaymentRepositoryFactory:
             out = '\nNo payments here\n'
         return out
 
-    def __repr__(self):
-        return str(self.pgds.query('SELECT * FROM payments'))
+    def __repr__(self): return str(self.pgds.query('SELECT * FROM payments'))
 
     # ##### Factory methods #####
-    def getPayment(self, id_, method, volume):
-        return Payment(id_, method, volume)
+    def get_payment(self, id_, method, volume): return Payment(id_, method, volume)
 
     # ##### Repository methods #####
     def all(self):
@@ -86,7 +72,7 @@ class PaymentRepositoryFactory:
             mrf = MoneyRepositoryFactory(self.pgds)
             payments = []
             for row in data:
-                p = self.getPayment(row[0], row[1], mrf.findById(row[2]))
+                p = self.get_payment(row[0], row[1], mrf.find_by_id(row[2]))
                 p.inDB = True
                 payments.append(p)
             return payments
@@ -129,7 +115,7 @@ class PaymentRepositoryFactory:
                     SET method = \'{payment.method}\', price_id = {payment.volume.id}, \
                     WHERE id = {payment.id}')
 
-    def findById(self, id_):
+    def find_by_id(self, id_):
         # Checking type
         if type(id_) != int:
             raise TypeError('id must be int type')
@@ -138,11 +124,11 @@ class PaymentRepositoryFactory:
         if len(data) > 0:
             from .Money import MoneyRepositoryFactory
             mrf = MoneyRepositoryFactory(self.pgds)
-            p = self.getPayment(data[0][0], data[0][1], mrf.findById(data[0][2]))
+            p = self.get_payment(data[0][0], data[0][1], mrf.find_by_id(data[0][2]))
             p.inDB = True
             return p
 
-    def deleteById(self, id_):
+    def delete_by_id(self, id_):
         # Checking type
         if type(id_) != int:
             raise TypeError('id must be int type')

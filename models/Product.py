@@ -1,33 +1,32 @@
-class Product:
-    def __init__(self, id_, name, price, categoryId):
+from db.templates import *
+
+
+class Product(Model):
+    def __init__(self, id_, name, price, category_id):
         self.id = id_
         self.inDB = False
         self.name = name
         self.price = price
-        self.categoryId = categoryId
+        self.category_id = category_id
 
     def __str__(self):
         title = f"--- Product \"{self.name}\" ---"
         id_ = f"Id: {self.id}"
         inDB = f'In DB: {self.inDB}'
         price = f'Price: {self.price}'
-        categoryId = f'Category id: {self.categoryId}'
-        return f'\n\n{title}\n{id_}\n{inDB}\n{price}\n{categoryId}\n\n'
+        category_id = f'Category id: {self.category_id}'
+        return f'\n\n{title}\n{id_}\n{inDB}\n{price}\n{category_id}\n\n'
 
     def __repr__(self):
-        return f'<<{[self.id, self.inDB, self.name, self.price, self.categoryId]}>>'
+        return f'<<{[self.id, self.inDB, self.name, self.price, self.category_id]}>>'
 
     def __setattr__(self, name, value):
         if name == 'id':
             if self.inDB == False:
-                if type(value) == int:
-                    object.__setattr__(self, name, value)
-                else:
+                if type(value) != int:
                     raise TypeError('id must have an int value')
         elif name == 'inDB':
-            if value in (True, False):
-                object.__setattr__(self, name, value)
-            else:
+            if value not in (True, False):
                 raise TypeError('value for inDB attribute must be True or False only')
         elif name == 'name':
             if type(value) != str:
@@ -51,44 +50,31 @@ class Product:
                     if repeated_numbers[splited[i]] == len(value):
                         raise NameError(
                             'the name contains only the same letters')
-                object.__setattr__(self, name, value)
         elif name == 'price':
             from .Money import Money
-            # check type
-            if type(value) != Money:
-                raise TypeError('price must be Money type')
-            else:
-                object.__setattr__(self, name, value)
-        elif name == 'categoryId':
-            if type(value) != int:
-                raise TypeError('categoryId must be int type')
-            else:
-                object.__setattr__(self, name, value)
-        else:
-            object.__setattr__(self, name, value)
+            if type(value) != Money: raise TypeError('price must be Money type')
+        elif name == 'category_id':
+            if type(value) != int: raise TypeError('category_id must be int type')
+        object.__setattr__(self, name, value)
 
-    def __eq__(self, other):
-        if type(other) == Product:
-            if self.id == other.id:
-                return True
-            else:
-                return False
+    def __eq__(self, other): return self.id == other.id if type(other) == Product else False
 
 
-class ProductRepositoryFactory:
+class ProductRepositoryFactory(ModelRepositoryFactory):
     def __init__(self, pgds):
         self.pgds = pgds
+
+        from .Money import MoneyRepositoryFactory
+        self.mrf = MoneyRepositoryFactory(self.pgds)
 
     def __str__(self):
         products = self.pgds.query('SELECT p.id, p.name,\
             p.price_id, p.category_id FROM products AS p')
         if len(products) != 0:
-            from .Money import MoneyRepositoryFactory
-            mrf = MoneyRepositoryFactory(self.pgds)
             prods = []
             for row in products:
-                money = mrf.findById(row[2])
-                p = self.getProduct(row[0], row[1], money, row[3])
+                money = self.mrf.find_by_id(row[2])
+                p = self.get_product(row[0], row[1], money, row[3])
                 p.inDB = True
                 prods.append(p)
             out = ''
@@ -102,19 +88,17 @@ class ProductRepositoryFactory:
         return str(self.pgds.query('SELECT * FROM products'))
 
     # ##### Factory methods #####
-    def getProduct(self, id_, name, price, categoryId):
-        return Product(id_, name, price, categoryId)
+    def get_product(self, id_, name, price, category_id):
+        return Product(id_, name, price, category_id)
 
     # ##### Repository methods #####
     def all(self):
         res = self.pgds.query('SELECT * FROM products')
         if len(res) > 0:
-            from .Money import MoneyRepositoryFactory
-            mrf = MoneyRepositoryFactory(self.pgds)
             products = []
             for row in res:
-                money = mrf.findById(row[2])
-                p = self.getProduct(row[0], row[1], money, row[3])
+                money = self.mrf.find_by_id(row[2])
+                p = self.get_product(row[0], row[1], money, row[3])
                 p.inDB = True
                 products.append(p)
             return products
@@ -128,7 +112,7 @@ class ProductRepositoryFactory:
         # Save object data
         if product.inDB == False:
             product.id = self.pgds.query(f'INSERT INTO products(name, created, price_id, category_id)\
-                VALUES (\'{product.name}\', now(), {product.price.id}, {product.categoryId})\
+                VALUES (\'{product.name}\', now(), {product.price.id}, {product.category_id})\
                 RETURNING id')[0][0]
             product.inDB = True
         elif product.inDB:
@@ -137,7 +121,7 @@ class ProductRepositoryFactory:
                 SET name = \'{product.name}\',
                     updated = now(),
                     price_id = {product.price.id},
-                    category_id = {product.categoryId}
+                    category_id = {product.category_id}
                 WHERE id = {product.id}
             ''')
 
@@ -154,7 +138,7 @@ class ProductRepositoryFactory:
         for product in products:
             if product.inDB == False:
                 product.id = self.pgds.query(f'INSERT INTO products(name, created, price_id, category_id)\
-                    VALUES (\'{product.name}\', now(), {product.price.id}, {product.categoryId})\
+                    VALUES (\'{product.name}\', now(), {product.price.id}, {product.category_id})\
                     RETURNING id')[0][0]
                 product.inDB = True
             elif product.inDB:
@@ -163,11 +147,11 @@ class ProductRepositoryFactory:
                     SET name = \'{product.name}\',
                         updated = now(),
                         price_id = {product.price.id},
-                        category_id = {product.categoryId}
+                        category_id = {product.category_id}
                     WHERE id = {product.id}
                 ''')
 
-    def findById(self, id_):
+    def find_by_id(self, id_):
         # Checking type
         if type(id_) != int:
             raise TypeError('id must be int type')
@@ -177,15 +161,13 @@ class ProductRepositoryFactory:
             WHERE id = {id_}
         ''')
         if len(res) != 0:
-            from .Money import MoneyRepositoryFactory
-            mrf = MoneyRepositoryFactory()
             data = res[0]
-            money = mrf.findById(data[2])
-            p = self.getProduct(data[0], data[1], money, data[3])
+            money = self.mrf.find_by_id(data[2])
+            p = self.get_product(data[0], data[1], money, data[3])
             p.inDB = True
             return p
 
-    def deleteById(self, id_):
+    def delete_by_id(self, id_):
         # Checking type
         if type(id_) != int:
             raise TypeError('id must be int type')

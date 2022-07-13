@@ -1,3 +1,6 @@
+from services.pg import PostgresORM
+
+
 class Model:
     def __init__(self, **fields):
         raise NotImplementedError()
@@ -15,9 +18,13 @@ class Model:
         raise NotImplementedError()
 
 
-class ModelRepositoryFactory:
-    def __init__(self):
-        raise NotImplementedError()
+class BaseModelRepositoryFactory:
+    MODEL = None
+
+    def __init__(self, orm: PostgresORM):
+        self.orm = orm
+        if self.MODEL == None: raise NotImplementedError('model must be specified')
+        self.model_name = self.MODEL.__class__.__name__
     
     def __str__(self):
         raise NotImplementedError()

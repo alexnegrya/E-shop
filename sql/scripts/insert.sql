@@ -45,14 +45,14 @@ INSERT INTO categories(name, created) VALUES('Tablets', now());
 INSERT INTO categories(name, created) VALUES('Laptops', now());
 
 -- Inserting clients
-INSERT INTO clients(full_name, created, address_id) VALUES('Doe John', now(), 1);
-INSERT INTO clients(full_name, created, address_id) VALUES('Небесный Алексей', now(), 2);
-INSERT INTO clients(full_name, created, address_id) VALUES('Popa Ion', now(),  3);
+INSERT INTO clients(email, first_name, last_name, password, created, address_id) VALUES('johndoe@gmail.com', 'John', 'Doe', 'john1290', now(), 1);
+INSERT INTO clients(email, first_name, last_name, password, created, address_id) VALUES('alexeynebo@mail.ru', 'Алексей', 'Небесный', 'alexeyn_120', now(), 2);
+INSERT INTO clients(email, first_name, last_name, password, created, address_id) VALUES('ionut931@outlook.com', 'Ion', 'Popa', 'IoNpSocial' now(), 3);
 
 -- Inserting contacts
-INSERT INTO contacts(type, value, client_id) VALUES('phone', '30-2045678956', 1);
-INSERT INTO contacts(type, value, client_id) VALUES('email', 'alexeynebo@mail.ru', 2);
-INSERT INTO contacts(type, value, client_id) VALUES('gmail', 'ionpopa@gmail.com', 3);
+INSERT INTO contacts(type, value, client_id) VALUES('Phone', '30-2045678956', 1);
+INSERT INTO contacts(type, value, client_id) VALUES('Telegram', '@alexeynebo', 2);
+INSERT INTO contacts(type, value, client_id) VALUES('Gmail', 'ionpopa@gmail.com', 3);
 
 -- Inserting currencies
 INSERT INTO currencies VALUES(978, 'EUR', 1, 21.0060);
@@ -61,12 +61,12 @@ INSERT INTO currencies VALUES(643, 'RUB', 1, 0.2436);
 
 -- Inserting money
 -- Money for products
-INSERT INTO money(amount, currency_char_code) VALUES(1000,'USD');
-INSERT INTO money(amount, currency_char_code) VALUES(1500,'EUR');
-INSERT INTO money(amount, currency_char_code) VALUES(1700,'EUR');
-INSERT INTO money(amount, currency_char_code) VALUES(15000,'RUB');
-INSERT INTO money(amount, currency_char_code) VALUES(60000,'RUB');
-INSERT INTO money(amount, currency_char_code) VALUES(2000,'USD');
+INSERT INTO money(amount, currency_char_code) VALUES(1000, 'USD');
+INSERT INTO money(amount, currency_char_code) VALUES(1500, 'EUR');
+INSERT INTO money(amount, currency_char_code) VALUES(1700, 'EUR');
+INSERT INTO money(amount, currency_char_code) VALUES(15000, 'RUB');
+INSERT INTO money(amount, currency_char_code) VALUES(60000, 'RUB');
+INSERT INTO money(amount, currency_char_code) VALUES(2000, 'USD');
 -- Money for payments
 INSERT INTO money(amount, currency_char_code) VALUES(0, 'USD');
 INSERT INTO money(amount, currency_char_code) VALUES(0, 'EUR');

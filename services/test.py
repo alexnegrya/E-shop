@@ -10,7 +10,6 @@ class TestDataService:
             data = json.loads(res.text)
             self.products = data
             return data
-        else:
-            raise SystemExit(f'Unable to connect: connection error {res.status_code}')
+        else: raise SystemExit(f'Unable to connect: connection error {res.status_code}')
 
     def __str__(self): return '\nNothing here\n' if self.products == None else f'\nProducts: {self.products}\n'

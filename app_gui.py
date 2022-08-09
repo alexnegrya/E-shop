@@ -25,23 +25,23 @@ sub_hello = tk.Label(hello_frame, text='Before starting please enter some inform
 sub_hello.config(font=Font(size=13), fg='gray38')
 sub_hello.pack()
 
-# Creating frame for customer data inputs
+# Creating frame for client data inputs
 data_frame = tk.Frame()
 data_frame.pack(pady=30)
 
-# Creating frame with customer first name input field
+# Creating frame with client first name input field
 name_frame = tk.LabelFrame(data_frame, text='First name')
 name_frame.pack(ipadx=5, ipady=3)
 name = tk.Entry(name_frame)
 name.pack()
 
-# Creating frame with customer last name input field
+# Creating frame with client last name input field
 surname_frame = tk.LabelFrame(data_frame, text='Last name')
 surname_frame.pack(ipadx=5, ipady=3)
 surname = tk.Entry(surname_frame)
 surname.pack()
 
-# Creating frame with customer address name input field
+# Creating frame with client address name input field
 address_frame = tk.LabelFrame(data_frame, text='Address')
 address_frame.pack(ipadx=5, ipady=3)
 tk.Label(address_frame, text='Country', font=Font(size=9)).pack()
@@ -94,10 +94,10 @@ def verify_and_start():
              text='Error: street number contains letters!')
         error.pack()
         correct = False
-    # verify customer data
+    # verify client data
     if correct:
         try:
-            user = Customer(name.get(), surname.get(), address)
+            user = Client(name.get(), surname.get(), address)
             activeUser = user
             finish = True
         except NameError as n:

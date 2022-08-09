@@ -12,12 +12,12 @@ logger.setLevel(logging.NOTSET)
 
 
 def _test_data(model, **attrs):
-    SUPPORTED_MODELS = (Customer, Address)
+    SUPPORTED_MODELS = (Client, Address)
     if model in SUPPORTED_MODELS:
         data_for_test = model.test_data.copy()
         data_for_test.update({k.strip('_'): v for k, v in attrs.items() if v != None})
-        if model == Customer:
-            Customer(
+        if model == Client:
+            Client(
                 data_for_test['id'],
                 data_for_test['email'],
                 data_for_test['first_name'],
@@ -78,10 +78,8 @@ def _get_and_test_models_attrs(model, *attrs: tuple[str], confirm_password=True,
                 _test_data(model, **{attr: value})
                 entered_data[model][attr] = value
             except Exception as e:
-                if not debug:
-                    return _is_user_choose_continue(e)
-                else:
-                    raise e
+                if not debug: return _is_user_choose_continue(e)
+                else: raise e
 
 
 def _add_sections_to_title(old_title: str, *sections: tuple[str]) -> str:
@@ -95,15 +93,15 @@ def _login():
     while True:
         wait('c')
 
-        status = _get_and_test_models_attrs(Customer, 'email', 'password', confirm_password=False)
+        status = _get_and_test_models_attrs(Client, 'email', 'password', confirm_password=False, debug=True)
         if type(status) == bool:
             if status: continue
             break
 
         try:
             active_user = crf.find_by_data(
-                email=entered_data[Customer]['email'],
-                password=entered_data[Customer]['password']
+                email=entered_data[Client]['email'],
+                password=entered_data[Client]['password']
             )[0]
             break
         except IndexError:
@@ -127,7 +125,7 @@ def _create_user():
     while True:
         wait('c')
 
-        status = _get_and_test_models_attrs(Customer, 'email', 'first_name', 'last_name', 'password')
+        status = _get_and_test_models_attrs(Client, 'email', 'first_name', 'last_name', 'password')
         if type(status) == bool:
             if status: continue
             break
@@ -147,8 +145,8 @@ def _create_user():
                     break
                 adata = entered_data[Address]
                 arf.save(arf.get_address(address_id, adata['country'], adata['city'], adata['street'], adata['number']))
-            cdata = entered_data[Customer]
-            active_user = crf.get_customer(user_id, cdata['email'], cdata['first_name'], cdata['last_name'], cdata['password'], address_id if with_address else None)
+            cdata = entered_data[Client]
+            active_user = crf.get_client(user_id, cdata['email'], cdata['first_name'], cdata['last_name'], cdata['password'], address_id if with_address else None)
             crf.save(active_user)
             active_user.inDB = True
         except Exception as e:
@@ -240,11 +238,11 @@ while exit == False:
 
                     if c == 1: # change all data (user + address)
                         list_for_update = []
-                        cstatus = _get_and_test_models_attrs(Customer, 'email', 'first name', 'last name', 'password')
+                        cstatus = _get_and_test_models_attrs(Client, 'email', 'first name', 'last name', 'password')
                         if type(cstatus) == bool:
                             if cstatus: continue
                             break
-                        list_for_update.append((active_user, Customer))
+                        list_for_update.append((active_user, Client))
                         if user_with_address:
                             astatus = _get_and_test_models_attrs(Address, 'country', 'city', 'street', 'number|street number')
                             if type(astatus) == bool:
@@ -257,11 +255,11 @@ while exit == False:
 
                     elif c in range(2, 6): # change one attr (user attrs only)
                         attr = options[c].lower().replace(' ', '_')
-                        status = _get_and_test_models_attrs(Customer, attr)
+                        status = _get_and_test_models_attrs(Client, attr)
                         if type(status) == bool:
                             if status: continue
                             break
-                        setattr(active_user, attr, entered_data[Customer][attr])
+                        setattr(active_user, attr, entered_data[Client][attr])
                         crf.save(active_user)
 
                     elif c > 5: # add or update address
@@ -275,7 +273,7 @@ while exit == False:
                             active_user.address_id = address_id
                             crf.save(active_user)
                         else:
-                            attr = options[c].split(' ')[1].lower()
+                            attr = options[c].split(' ')[-1].lower()
                             status = _get_and_test_models_attrs(Address, attr if attr != 'number' else 'number|street number')
                             if type(status) == bool:
                                 if status: continue

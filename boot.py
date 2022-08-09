@@ -9,13 +9,13 @@ logger.setLevel(logging.NOTSET)
 
 
 # Imports
-from models.Product import *
-from models.Money import Money
-from models.Order import Order
-from models.Customer import *
-from models.Address import *
-from services.TestData import TestDataService
-from services.PGDataService import PGDataService
+from models.products import *
+from models.money import Money
+from models.orders import Order
+from models.clients import *
+from models.addresses import *
+from services.test import TestDataService
+from services.pg import PostgresDataService
 import os
 from psycopg2.errors import UndefinedTable
 
@@ -26,7 +26,7 @@ logger.info('All modules and libraries imported')
 tds = TestDataService()
 PASSWORD = os.environ.get('ESHOP_DB_PASSWORD')
 if PASSWORD != None:
-    pgds = PGDataService('localhost', 'eshop', 'eshop_admin', PASSWORD)
+    pgds = PostgresDataService('localhost', 'eshop', 'eshop_admin', PASSWORD)
     pgds.open()
 
     logger.info('Database service initialized')
@@ -69,8 +69,8 @@ if len(created_tables) == len(TABLES):
 
 
 # Repositories initialization
-prf = ProductRepositoryFactory(pgds)
-crf = CustomerRepositoryFactory(pgds)
-arf = AddressRepositoryFactory(pgds)
+pm = ProductsManager(pgds)
+cm = ClientsManager(pgds)
+am = AddressesManager(pgds)
 
 logger.info('Models factories intialized')

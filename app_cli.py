@@ -332,6 +332,10 @@ while not exit:
 
     elif choice == 2: # Catalog
         # create shop products if not created
+        get_selected_product(True,
+            Product(name='test1', price_id=1, category_id=1),
+            Product(name='test2', price_id=2, category_id=2),
+            Product(name='test3', price_id=3, category_id=3))
         if len(pm.all()) == 0:
             data = tds.getTestProducts()
             for obj in data:

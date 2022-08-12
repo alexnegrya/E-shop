@@ -1,8 +1,12 @@
 from os import system
-from .paginator import paginate
+from .paginators import Paginator
 
 
-# Config
+# Local config
+_paginator = Paginator()
+
+
+# Global config
 active_client = None
 exit = False
 entered_data = {}
@@ -70,22 +74,10 @@ def is_user_choice_confirmed() -> bool:
         if c in ('y', 'n'): return c == 'y'
 
 
-def print_products(products: list):
-    # print many products
-    if len(products) >= 6: return paginate(products, 'Cart')
-    # print a few products
-    else:
-        hint = True
-        help = '\nEnter \"buy\" to add product to cart or \"back\" to return to the main menu.'
-        while True:
-            system('clear')
-            [print(product) for product in products]
-            if hint:
-                print(help)
-                hint = False
-            option = input('\n>>> ')
-            if option == 'buy': return True
-            elif option == 'back': return False
+def get_selected_product(show_cats_names: bool, *products: tuple):
+    if type(show_cats_names) != bool:
+        raise TypeError('show cats names must have bool value')
+    _paginator.paginate_products(products)
 
 
 # Additional functions
@@ -100,4 +92,5 @@ def wait(mode: str):
     if mode == 'a': system('clear')
 
 
-def format_password(password: str): return password[0] + '*' * len(password[1:-1]) + password[-1]
+def format_password(password: str):
+    return password[0] + '*' * len(password[1:-1]) + password[-1]

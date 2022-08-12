@@ -9,11 +9,7 @@ logger.setLevel(logging.NOTSET)
 
 
 # Imports
-from models.products import *
-from models.money import Money
-from models.orders import Order
-from models.clients import *
-from models.addresses import *
+from models import *
 from services.test import TestDataService
 from services.pg import PostgresDataService
 import os
@@ -39,7 +35,7 @@ TABLES = (
     'addresses', 'categories', 'clients', 'contacts',
     'currencies', 'money', 'payments', 'products',
     'ratings', 'services', 'shops', 'stock_items',
-    'orders', 'order_items'
+    'orders', 'orders_items'
 )
 created_tables = []
 for table in TABLES:
@@ -50,27 +46,22 @@ for table in TABLES:
         with open(f'sql/tables/{table}.sql') as file:
             pgds.query(file.read())
         created_tables.append(table)
-
-if len(created_tables) > 0:
-    logger.info(f'The following missing database tables created: {", ".join(created_tables)}')
-else:
-    logger.info('All database tables exist')
-
+logger.info(f'The following missing database tables created: {", ".join(created_tables)}' if len(created_tables) > 0 else 'All database tables exist')
 
 # Inserting test data if all tables were created now and user agrees
-if len(created_tables) == len(TABLES):
-    while True:
-        os.system('clear')
-        choice = input('\nNew database found, auto insert test data? (y/n) >>> ').lower()
-        if choice.startswith('y'):
-            with open('sql/scripts/insert.sql') as file:
-                pgds.query(file.read())
-        elif choice.startswith('n'): break
+# if len(created_tables) == len(TABLES):
+#     while True:
+#         os.system('clear')
+#         choice = input('\nNew database found, auto insert test data? (y/n) >>> ').lower()
+#         if choice.startswith('y'):
+#             with open('sql/scripts/insert.sql') as file: pgds.query(file.read())
+#         elif choice.startswith('n'): break
 
 
 # Repositories initialization
 pm = ProductsManager(pgds)
 cm = ClientsManager(pgds)
 am = AddressesManager(pgds)
+conm = ContactsManager(pgds)
 
 logger.info('Models factories intialized')

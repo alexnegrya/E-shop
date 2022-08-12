@@ -1,6 +1,7 @@
 from services.pg import PostgresDataService
 import re
 from datetime import datetime
+from .tools import get_model_fields
 
 
 class _StringFormatter:
@@ -14,7 +15,7 @@ class _StringFormatter:
 class Model:
     """
     Parent class for any DB model. Wrapper for some row in some table, used with manager. `TABLE`, `FIELDS` and `TEST_VALUES` attributes is needed, other is optional.
-    Also needed to write code that raises exceptions if any of recieved values for fields (exclude `id`) is wrong in `__validate_model_fields` method.
+    Also needed to write code that raises exceptions if any of recieved values for fields (exclude `id`) is wrong in `validate_model_field` method.
     Change `__get_attr_for_print` function to return value of needed attr in the `print` format (optional).
     """
 
@@ -47,7 +48,7 @@ class Model:
     def __set_fields(self):
         fields = []
         for field in self.FIELDS:
-            sep_count = len(re.findall('|', field))
+            sep_count = len(re.findall(r'\|', field))
             if sep_count == 1:
                 spl = field.split('|')
                 setattr(self, f'__{spl[0]}_alias', spl[1])
@@ -56,24 +57,32 @@ class Model:
             else: raise ValueError(f'field "{field}" have many alias separators, only one needed')
         self.FIELDS = tuple(fields)
 
-    def __init__(self, **fields):
+    def __init__(self, **attrs):
         self.__validate_default_attrs()
         self.WITH_ID = 'id' in self.FIELDS
         if self.WITH_CREATED: self.created = datetime.now()
         if self.WITH_UPDATED: self.updated = None
-        [setattr(self, field, value) for field, value in fields.items()]
+        self.inDB = False
+
+        model_attrs = attrs.copy()
+        try: model_attrs.pop(self.FIELDS[0])
+        except KeyError: pass
+        if tuple(model_attrs.keys()) != self.FIELDS[1:]: raise ValueError('all attrs for model FIELDS (exclude PK) must be specified')
+        [setattr(self, attr, value) for attr, value in attrs.items()]
+        if self.WITH_ID and 'id' not in attrs: self.id = None
+
         self.__update_doc()
         self._formatter = _StringFormatter()
 
     def __get_attr_for_print(self, attr: str): pass
 
     def __str__(self):
-        title = f'--- {self._formatter.format_to_title(self.TABLE)} ---\n'
+        title = f'--- {self._formatter.format_to_title(self.__class__.__name__)} ---\n'
         id_ = f'ID: {self.id}\n' if self.WITH_ID else ''
         inDB = f'In DB: {self.inDB}\n'
-        fields = {field: field if getattr(self, f"__{field}_alias") == None else getattr(self, f"__{field}_alias") for field in self.FIELDS}
-        return f'{title}{id_}{inDB}' + '\n'.join([f'{self._formatter.format_to_title(field_name)}: \
-            {getattr(self, field) if self.__get_attr_for_print(field) == None else self.__get_attr_for_print(field)}' for field, field_name in fields.items()])
+        fields = {field: field if getattr(self, f"__{field}_alias", None) == None else getattr(self, f"__{field}_alias") for field in self.FIELDS[1:]}
+        return f'{title}{id_}{inDB}' + '\n'.join([f'{self._formatter.format_to_title(field_name)}:\
+ {getattr(self, field) if self.__get_attr_for_print(field) == None else self.__get_attr_for_print(field)}' for field, field_name in fields.items()])
     
     def __repr__(self):
         fields = []
@@ -84,27 +93,36 @@ class Model:
         if self.WITH_ID: values.insert(0, self.id)
         return f'<<{values}>>'
 
-    def __validate_known_fields(self, name: str, value):
+    def __validate_known_field(self, name: str, value):
         if name == 'id':
-            if self.inDB == False:
+            if self.inDB:
                 if type(value) != int: raise ValueError('id must have an int value')
         elif name == 'inDB':
             if value not in (True, False): raise ValueError('inDB attr must have True/False value only')
         elif name in ('created', 'updated'):
-            if not getattr(self, f'with_{name}'): raise ValueError(f'{name} attr is not supported by this model')
+            if not getattr(self, f'WITH_{name.upper()}'): raise ValueError(f'{name} attr is not supported by this model')
             if value != None and type(value) != datetime: raise TypeError(f'{name} must have datetime object value')
 
-    def __validate_model_fields(self, name: str, value): raise NotImplementedError()
+    def validate_model_field(self, name: str, value): raise NotImplementedError(f'method not implemeted in "{self.__class__.__name__}" model')
     
     def __setattr__(self, name: str, value):
-        self.__validate_known_fields(name, value)
-        self.__validate_model_fields(name, value)
-        object.__setattr__(self, name, value if getattr(self, '__value') == None else self.__value)
+        self.__validate_known_field(name, value)
+        self.validate_model_field(name, value)
+        if getattr(self, 'setattr_value', None) == None: object.__setattr__(self, name, value)
+        else:
+            object.__setattr__(self, name, self.setattr_value)
+            object.__setattr__(self, 'setattr_value', None)
         if name != 'updated' and self.WITH_UPDATED: object.__setattr__(self, 'updated', datetime.now())
     
-    def __eq__(self, other): return getattr(self, self.FIELDS[0]) == getattr(other, self.FIELDS[0]) if type(other) == type(self) else False
+    def __eq__(self, other) -> bool: return getattr(self, self.FIELDS[0]) == getattr(other, self.FIELDS[0]) if type(other) == type(self) else False
 
-    def get_data(self): return {field: getattr(self, field) for field in self.FIELDS}
+    def get_data(self, with_id=False, with_dt_fields=True) -> dict:
+        fields = self.FIELDS if with_id else self.FIELDS[1:]
+        data = {field: getattr(self, field) for field in fields}
+        if with_dt_fields: [data.update({field: getattr(self, field)}) for field in ('created', 'updated') if getattr(self, f'WITH_{field.upper()}')]
+        return data
+
+    def get_test_data(self) -> dict: return {field: self.TEST_VALUES[i] for i, field in enumerate(self.FIELDS)}
 
 
 class ModelManager:
@@ -121,7 +139,8 @@ class ModelManager:
         if len(model_name_spl) > 2: raise ValueError('model name must contains 2 words max')
         self._formatter = _StringFormatter()
         self.plural = self._formatter.format_to_title(self.MODEL.TABLE)
-        self.table, self.fields = self.MODEL.TABLE, self.MODEL.FIELDS
+        self.table, self.fields = self.MODEL.TABLE, get_model_fields(self.MODEL)
+        self.with_created, self.with_updated = self.MODEL.WITH_CREATED, self.MODEL.WITH_UPDATED
         self.pk = self.fields[0]
         self.__doc__ = f"{self.MODEL.__class__.__name__} models manager with methods for theirs CRUD in DB."
     
@@ -129,48 +148,58 @@ class ModelManager:
     
     def __repr__(self): return str(self.pgds.select('*', from_table=self.table))
 
-    def __get_wrapped_data(self, data: list[dict], multiple=True) -> list:
-        if len(data) > 1:
-            if not multiple: 
-                models = [self.MODEL(**row) for row in data]
-                [setattr(m, 'inDB', True) for m in models]
-                return models
-            else: raise ValueError('at least two rows with the same PK was found')
-        elif len(data) == 1:
-            model = self.MODEL(**data[0])
-            model.inDB = True
-            return model
-        elif multiple: return []
+    def __getattr__(self, name: str):
+        if name == 'sort' and self.with_created or self.with_updated: return self.sort
+
+    def __get_wrapped_data(self, data: list[dict]) -> list:
+        models = [self.MODEL(**row) for row in data]
+        [setattr(m, 'inDB', True) for m in models]
+        return models
 
     def __validate_values(self, values: dict):
-        if tuple(values.keys()) != self.fields: raise ValueError('unknown field(s) specified')
+        fields = list(self.fields)
+        if self.with_created: fields.append('created')
+        if self.with_updated: fields.append('updated')
+        if any([field not in fields for field in values.keys()]): raise ValueError('unknown field(s) specified')
 
     def __select_by_pk(self, pk):
+        if pk == None: raise TypeError('pk arg do not must be None')
         data = self.pgds.select(*self.fields, from_table=self.table, where=f'{self.pk} = {pk}')
-        return self.__get_wrapped_data(data, False)
+        if len(data) > 1: raise ValueError(f'more then one model with "{pk}" PK found')
+        return self.__get_wrapped_data(data)[0]
 
-    def __update_by_pk(self, pk, **values):
-        self.__validate_values(values)
-        self.pgds.update(self.table, f'{self.pk} = {pk}', **values)
+    def __update_row(self, model: Model):
+        data = model.get_data()
+        self.__validate_values(data)
+        self.pgds.update(self.table, {self.pk: getattr(model, self.pk), }, **data)
 
     def all(self):
         data = self.pgds.select(*self.fields, from_table=self.table)
         return self.__get_wrapped_data(data)
 
+    def sort(self, *models) -> list:
+        l, attrs = [], [attr for attr in ('updated', 'created') if getattr(self, f'with_{attr}')]
+        for attr in attrs:
+            for dt in sorted([getattr(model, attr) for model in models if getattr(model, attr) != None])[::-1]:
+                l += [model for model in models if getattr(model, attr) == dt and model not in l]
+        return l + [model for model in models if model not in l]
+
     def save(self, *models):
+        models_pkeys = []
         for model in models:
             if type(model) != self.MODEL: raise TypeError(f'all objects should be only {self.plural} type')
-            if model.inDB == False:
-                setattr(model, self.pk, self.pgds.insert(self.table, self.pk, **model.get_data())[0][0])
-                model.inDB = True
-            else: self.__update_by_pk(getattr(model, self.pk), **model.get_data())
+            if model.inDB:
+                pk = getattr(model, self.pk)
+                self.__update_row(model)
+            else: pk = self.pgds.insert(self.table, self.pk, **model.get_data())[0][0]
+            models_pkeys.append(pk)
+        return [self.find(**{self.pk: pkey}) for pkey in models_pkeys]
 
-    def find_by_pk(self, pk): return self.__select_by_pk(pk)
-
-    def find_by_data(self, **values) -> list:
+    def find(self, **values):
         self.__validate_values(values)
-        if self.pk in values: return self.__select_by_pk(values[self.pk])
-        data = self.pgds.select(self.fields, from_table=self.table, where={f: v for f, v in values.items()})
+        if tuple(values.keys()) == (self.pk,): return self.__select_by_pk(values[self.pk])
+        data = self.pgds.select(*self.fields, from_table=self.table, where={f: v for f, v in values.items()})
         return self.__get_wrapped_data(data)
     
-    def delete_by_pk(self, pk): self.pgds.delete(self.table, f'{self.pk} = {pk}')
+    def delete(self, *models_or_pkeys): [self.pgds.delete(self.table,
+        f'{self.pk} = {getattr(obj, self.pk) if type(obj) != int else obj}') for obj in models_or_pkeys]

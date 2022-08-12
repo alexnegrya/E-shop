@@ -16,7 +16,7 @@ exit_msg = 'Thank you for using this app!'
 # Options (described which models and for which operations will be used in each option)
 main_options = (
     'Account', # Client CRUD, Address CRUD, Contact CRUD
-    'Catalog', # Category R, Product page - Product R, StockItem R, Rating CRU, Money CRU, Currency R, Order CU, OrderItem CU
+    'Catalog', # Category R, Product page - Product R, StockItem R, Rating CRU, Money CRU, Order CU, OrderItem CU
     'Cart', # Order RUD, OrderItem RUD, Service R, Shop R, Payment CRUD and other models related to this models
     'Exit'
 )

@@ -32,10 +32,9 @@ else:
 
 # Creating missing tables
 TABLES = (
-    'addresses', 'categories', 'clients', 'contacts',
-    'currencies', 'money', 'payments', 'products',
-    'ratings', 'services', 'shops', 'stock_items',
-    'orders', 'orders_items'
+    'addresses', 'categories', 'clients', 'contacts', 'money',
+    'payments', 'products', 'ratings', 'services', 'shops',
+    'stock_items', 'orders', 'orders_items'
 )
 created_tables = []
 for table in TABLES:

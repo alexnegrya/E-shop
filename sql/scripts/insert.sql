@@ -54,26 +54,21 @@ INSERT INTO contacts(type, value, client_id) VALUES('Phone', '30-2045678956', 1)
 INSERT INTO contacts(type, value, client_id) VALUES('Telegram', '@alexeynebo', 2);
 INSERT INTO contacts(type, value, client_id) VALUES('Gmail', 'ionpopa@gmail.com', 3);
 
--- Inserting currencies
-INSERT INTO currencies VALUES(978, 'EUR', 1, 21.0060);
-INSERT INTO currencies VALUES(840, 'USD', 1, 17.7198);
-INSERT INTO currencies VALUES(643, 'RUB', 1, 0.2436);
-
 -- Inserting money
 -- Money for products
-INSERT INTO money(amount, currency_char_code) VALUES(1000, 'USD');
-INSERT INTO money(amount, currency_char_code) VALUES(1500, 'EUR');
-INSERT INTO money(amount, currency_char_code) VALUES(1700, 'EUR');
-INSERT INTO money(amount, currency_char_code) VALUES(15000, 'RUB');
-INSERT INTO money(amount, currency_char_code) VALUES(60000, 'RUB');
-INSERT INTO money(amount, currency_char_code) VALUES(2000, 'USD');
+INSERT INTO money(amount) VALUES(1000);
+INSERT INTO money(amount) VALUES(1500);
+INSERT INTO money(amount) VALUES(1700);
+INSERT INTO money(amount) VALUES(15000);
+INSERT INTO money(amount) VALUES(60000);
+INSERT INTO money(amount) VALUES(2000);
 -- Money for payments
-INSERT INTO money(amount, currency_char_code) VALUES(0, 'USD');
-INSERT INTO money(amount, currency_char_code) VALUES(0, 'EUR');
-INSERT INTO money(amount, currency_char_code) VALUES(0, 'RUB');
+INSERT INTO money(amount) VALUES(0);
+INSERT INTO money(amount) VALUES(0);
+INSERT INTO money(amount) VALUES(0);
 -- Money for services
-INSERT INTO money(amount, currency_char_code) VALUES(100, 'USD');
-INSERT INTO money(amount, currency_char_code) VALUES(50, 'EUR');
+INSERT INTO money(amount) VALUES(100);
+INSERT INTO money(amount) VALUES(50);
 
 -- Inserting services
 INSERT INTO services(name, description, price_id)
@@ -157,14 +152,14 @@ WHERE id = 9;
      --------------------------------> | 1  | 'Smartphones' |
      |                                 ----------------------
      | 
-     |                             -------------------------------
-     |                             |           money             |
-     |                             | --------------------------- |
-     |                             | id | amount | currency_code |
-     |                             | --------------------------- |
-     |                       ----> | 1  | 1000   | 'USD'         |
-     |                       | --> | 2  | 1500   | 'USD'         |
-     |                       | |   -------------------------------
+     |                             ---------------
+     |                             |    money    |
+     |                             | ------------|
+     |                             | id | amount |
+     |                             | ------------|
+     |                       ----> | 1  | 1000   |
+     |                       | --> | 2  | 1500   |
+     |                       | |   ---------------
      |                       | |
      |                       | ---------------------------------------------------------------
      |                       --------------------------------------------------------------- |

@@ -9,7 +9,7 @@ class Client(Model):
     WITH_CREATED = True
     WITH_UPDATED = True
 
-    def __validate_model_fields(self, name, value):
+    def validate_model_field(self, name, value):
         if name == 'email':
             email_pattern = '^[a-z0-9]+[\._]?[a-z0-9]+[@]\w+[.]\w{2,3}$'
             if not re.search(email_pattern, value):
@@ -20,7 +20,7 @@ class Client(Model):
             elif value == '':
                 raise NameError('name cannot be an empty string')
             else:
-                formated_name = name[0].upper() + name[1:].replace('_', ' ')
+                formated_name = name.replace('_', ' ')
                 splited = list(value)
                 if ' ' in splited: raise ValueError(f'{formated_name} must not contains spaces')
                 # Checking name for letters repition

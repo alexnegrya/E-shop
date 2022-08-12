@@ -8,7 +8,7 @@ class Rating(Model):
     WITH_CREATED = True
     WITH_UPDATED = True
 
-    def __validate_model_fields(self, name: str, value):
+    def validate_model_field(self, name: str, value):
         if name == 'stars':
             if type(value) != int: raise TypeError('stars must be int type')
             if value not in range(1, 11): raise ValueError('stars must be in int range 1-10')

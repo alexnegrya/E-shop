@@ -6,12 +6,12 @@ class Address(Model):
     FIELDS = ('id', 'country', 'city', 'street', 'number|street number')
     TEST_VALUES = (1, 'test', 'test', 'test', '1/2')
 
-    def __validate_model_fields(self, name: str, value):
+    def validate_model_field(self, name: str, value):
         if name in ('country', 'city', 'street'):
             if type(value) != str:
                 raise TypeError('value must be a string')
             elif value == '':
-                raise ValueError('value cannot be an empty string')
+                raise ValueError(f'{name} cannot be an empty string')
             else:
                 # Spliting name by letters
                 splited = []
@@ -27,16 +27,15 @@ class Address(Model):
                 # Checking name for the same letters only
                 for i in range(len(repeated_numbers)):
                     if repeated_numbers[splited[i]] == len(value):
-                        raise ValueError(
-                            'the value contains only the same letters')
+                        raise ValueError(f'{name} contains only the same letters')
         elif name == 'number':
             if type(value) != int and type(value) != str:
                 raise TypeError('wrong number type')
             if type(value) == str:
                 # Checking str for the content of letters
                 if value.isupper() or value.islower():
-                    raise ValueError('value must not contain letters')
-            self.__value = value.strip()
+                    raise ValueError('street number must not contain letters')
+            self.setattr_value = value.strip()
 
 
 class AddressesManager(ModelManager):

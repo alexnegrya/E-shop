@@ -9,7 +9,7 @@ class Currency(Model):
     def __get_attr_for_print(self, attr: str):
         if attr == 'rate': return f'{self.rate:.04f}'
 
-    def __validate_model_fields(self, name: str, value):
+    def validate_model_field(self, name: str, value):
         if name == 'num_code':
             if type(value) != str:
                 raise TypeError('value for num_code must be str type')

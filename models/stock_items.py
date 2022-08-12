@@ -6,7 +6,7 @@ class StockItem(Model):
     FIELDS = ('id', 'quantity', 'product_id')
     TEST_VALUES = (1, 1, 1)
 
-    def __validate_model_fields(self, name: str, value):
+    def validate_model_field(self, name: str, value):
         if name in ('quantity', 'product_id') and type(value) != int: raise TypeError(f'{name} must have int value')
 
 

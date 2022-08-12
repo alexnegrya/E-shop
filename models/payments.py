@@ -6,7 +6,7 @@ class Payment(Model):
     FIELDS = ('id', 'method', 'price_id')
     TEST_VALUES = (1, 'test', 1)
 
-    def __validate_model_fields(self, name: str, value):
+    def validate_model_field(self, name: str, value):
         if name == 'method' and type(value) != str: raise TypeError('method must be str type')
         elif name == 'price_id' and type(value) != int: raise TypeError('price id must have int value')
 

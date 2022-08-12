@@ -6,7 +6,7 @@ class Shop(Model):
     FIELDS = ('id', 'working_hours', 'address_id')
     TEST_VALUES = (1, [['00:00', '00:01'] for _ in range(7)], 1)
     
-    def __validate_model_fields(self, name: str, value):
+    def validate_model_field(self, name: str, value):
         if name == 'working_hours':
             # Checking attribute type
             if type(value) != list: raise TypeError('working_hours must be list type')
@@ -59,7 +59,7 @@ class Shop(Model):
                     times_spls[0][time_num] - times_spls[1][time_num] > 9 else \
                     f'0{times_spls[0][time_num] - times_spls[1][time_num]}'] for time_num in range(2)]
                 value[i].append(f'{times_defs[0]}:{times_defs[1]}')
-            self.__value = value
+            self.setattr_value = value
         elif name == 'address_id' and type(value) != int: raise TypeError('address_id must be int type')
 
 

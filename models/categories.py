@@ -9,7 +9,7 @@ class Category(Model):
     WITH_CREATED = True
     WITH_UPDATED = True
 
-    def __validate_model_fields(self, name: str, value):
+    def validate_model_field(self, name: str, value):
         if name == 'name':
             if type(value) != str: raise TypeError('name must be a string')
             elif value == '': raise NameError('name cannot be an empty string')

@@ -8,7 +8,7 @@ class Order(Model):
     WITH_CREATED = True
     WITH_UPDATED = True
 
-    def __validate_model_fields(self, name: str, value):
+    def validate_model_field(self, name: str, value):
         if name.endswith('_id') and type(value) != int: raise ValueError(f'{name} must have int value')
 
 

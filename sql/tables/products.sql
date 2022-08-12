@@ -10,8 +10,10 @@ CREATE TABLE products
     CONSTRAINT products_pkey PRIMARY KEY (id),
     CONSTRAINT products_price_fkey
         FOREIGN KEY (price_id)
-            REFERENCES money(id),
+            REFERENCES money(id)
+                ON DELETE RESTRICT,
     CONSTRAINT products_category_fkey
         FOREIGN KEY (category_id)
             REFERENCES categories(id)
+                ON DELETE CASCADE
 );

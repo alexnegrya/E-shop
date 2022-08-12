@@ -13,4 +13,5 @@ CREATE TABLE clients
     CONSTRAINT clients_address_fkey
         FOREIGN KEY (address_id)
             REFERENCES addresses(id)
+                ON DELETE SET NULL
 );

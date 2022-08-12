@@ -16,4 +16,5 @@ CREATE TABLE categories
     CONSTRAINT categories_parent_category_fkey
         FOREIGN KEY (parent_category_id)
             REFERENCES categories(id)
+                ON DELETE CASCADE
 );

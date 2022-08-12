@@ -9,4 +9,5 @@ CREATE TABLE services
     CONSTRAINT services_price_fkey
         FOREIGN KEY (price_id)
             REFERENCES money(id)
+                ON DELETE RESTRICT
 );

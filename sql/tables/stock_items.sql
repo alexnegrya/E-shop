@@ -8,4 +8,5 @@ CREATE TABLE stock_items
     CONSTRAINT stock_items_product_fkey
         FOREIGN KEY (product_id)
             REFERENCES products(id)
+                ON DELETE CASCADE
 );

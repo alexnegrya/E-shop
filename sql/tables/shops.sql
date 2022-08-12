@@ -8,4 +8,5 @@ CREATE TABLE shops
     CONSTRAINT shops_address_fkey
         FOREIGN KEY (address_id)
             REFERENCES addresses(id)
+                ON DELETE RESTRICT
 );

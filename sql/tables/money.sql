@@ -8,4 +8,5 @@ CREATE TABLE money
     CONSTRAINT money_currency_fkey
         FOREIGN KEY (currency_char_code)
             REFERENCES currencies(char_code)
+                ON DELETE RESTRICT
 );

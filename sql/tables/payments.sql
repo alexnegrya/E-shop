@@ -8,4 +8,5 @@ CREATE TABLE payments
     CONSTRAINT payments_price_fkey
         FOREIGN KEY (price_id)
             REFERENCES money(id)
+                ON DELETE RESTRICT
 );

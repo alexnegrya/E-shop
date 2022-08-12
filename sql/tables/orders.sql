@@ -10,11 +10,14 @@ CREATE TABLE orders
     CONSTRAINT orders_pkey PRIMARY KEY (id),
     CONSTRAINT orders_total_cost_fkey
         FOREIGN KEY (total_cost_id)
-            REFERENCES money(id),
+            REFERENCES money(id)
+                ON DELETE RESTRICT,
     CONSTRAINT orders_payment_fkey
         FOREIGN KEY (payment_id)
-            REFERENCES payments(id),
+            REFERENCES payments(id)
+                ON DELETE RESTRICT,
     CONSTRAINT orders_client_fkey
         FOREIGN KEY (client_id)
             REFERENCES clients(id)
+                ON DELETE CASCADE
 );

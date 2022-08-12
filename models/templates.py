@@ -81,8 +81,10 @@ class Model:
         id_ = f'ID: {self.id}\n' if self.WITH_ID else ''
         inDB = f'In DB: {self.inDB}\n'
         fields = {field: field if getattr(self, f"__{field}_alias", None) == None else getattr(self, f"__{field}_alias") for field in self.FIELDS[1:]}
-        return f'{title}{id_}{inDB}' + '\n'.join([f'{self._formatter.format_to_title(field_name)}:\
- {getattr(self, field) if self.__get_attr_for_print(field) == None else self.__get_attr_for_print(field)}' for field, field_name in fields.items()])
+        return f'{title}{id_}{inDB}' + '\n'.join(
+            [f'{self._formatter.format_to_title(field_name)}:\
+ {getattr(self, field) if self.__get_attr_for_print(field) == None else self.__get_attr_for_print(field)}'\
+            for field, field_name in fields.items()]).replace(' id: ', ' ID: ')
     
     def __repr__(self):
         fields = []

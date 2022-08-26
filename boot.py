@@ -62,5 +62,6 @@ pm = ProductsManager(pgds)
 cm = ClientsManager(pgds)
 am = AddressesManager(pgds)
 conm = ContactsManager(pgds)
+catsm = CategoriesManager(pgds)
 
 logger.info('Models factories intialized')

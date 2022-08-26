@@ -20,7 +20,8 @@ class PostgresDataService:
         )
         
     def __format_value_for_query(self, value) -> str:
-        value = str(value) if type(value) not in (str, datetime) else "'" + str(value).replace("'", "''") + "'"
+        value = str(value) if type(value) not in (str, datetime) \
+            else "'" + str(value).replace("'", "''") + "'"
         return value if value != 'None' else 'null'
 
     def __format_alias(self, value: str) -> str:
@@ -30,8 +31,14 @@ class PostgresDataService:
     def __format_keyword(self, name: str, kwd) -> str:
         if name == 'where':
             if type(kwd) == str: return f' WHERE {kwd}'
-            elif type(kwd) == dict and all([type(k) == str for k in kwd.keys()]):
-                return f" WHERE {' AND '.join([f'{field} = {self.__format_value_for_query(value)}' for field, value in kwd.items()])}"
+            elif type(kwd) == dict and all(
+              [type(k) == str for k in kwd.keys()]):
+                formatted_values = []
+                for field, value in kwd.items():
+                    formatted_values.append(
+                        f'{field} = {self.__format_value_for_query(value)}' \
+                        if value != None else f'{field} IS NULL')
+                return f" WHERE {' AND '.join(formatted_values)}"
             else: return ''
         elif name == 'join':
             if type(kwd) == str:

@@ -1,9 +1,4 @@
 from os import system
-from .paginators import Paginator
-
-
-# Local config
-_paginator = Paginator()
 
 
 # Global config
@@ -11,13 +6,14 @@ active_client = None
 exit = False
 entered_data = {}
 exit_msg = 'Thank you for using this app!'
+not_ready_msg = 'This functional coming soon, please wait'
 
 
 # Options (described which models and for which operations will be used in each option)
 main_options = (
     'Account', # Client CRUD, Address CRUD, Contact CRUD
-    'Catalog', # Category R, Product page - Product R, StockItem R, Rating CRU, Money CRU, Order CU, OrderItem CU
-    'Cart', # Order RUD, OrderItem RUD, Service R, Shop R, Payment CRUD and other models related to this models
+    'Catalog (coming soon)', # Category R, Product page - Product R, StockItem R, Rating CRU, Money CRU, Order CU, OrderItem CU
+    'Cart (coming soon)', # Order RUD, OrderItem RUD, Service R, Shop R, Payment CRUD and other models related to this models
     'Exit'
 )
 sub_options = {
@@ -74,21 +70,15 @@ def is_user_choice_confirmed() -> bool:
         if c in ('y', 'n'): return c == 'y'
 
 
-def get_selected_product(show_cats_names: bool, *products: tuple):
-    if type(show_cats_names) != bool:
-        raise TypeError('show cats names must have bool value')
-    _paginator.paginate_products(products)
-
-
 # Additional functions
 
-def wait(mode: str):
+def wait(mode: str, msg='Press [Enter] to continue'):
     MODES = ('c', 't', 'a')
     if type(mode) != str: raise TypeError('mode must be a string')
     if mode not in MODES: raise ValueError('unknown mode')
 
     if mode == 'c': system('clear')
-    elif mode in ('t', 'a'): input('\nPress [Enter] to continue... ')
+    elif mode in ('t', 'a'): input(f'\n{msg}... ')
     if mode == 'a': system('clear')
 
 

@@ -1,17 +1,18 @@
 from cli.main import *
+from cli.paginators import Paginator
 import boot
 from boot import *
 from datetime import datetime
-import sys
 import json
 from models.tools import validate_model_attrs
 from getpass import getpass
 from psycopg2.errors import UniqueViolation
 
 
-# Setup logger
+# Setup
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.NOTSET)
+_paginator = Paginator()
 
 
 def _get_data_choice(msg: str, prev_menu_name: str): return get_user_choice('Re-enter data', f'Back to {prev_menu_name} menu', title=msg)
@@ -80,23 +81,28 @@ def _add_sections_to_title(old_title: str, *sections: tuple[str]) -> str: return
 
 def _login():
     global active_client
-
+    email_entered = False
     while True:
         entered_data.clear()
         wait('c')
 
         try:
-            status = _get_and_test_models_attrs(Client, 'start', 'email')
-            if type(status) == bool:
-                if status: continue
-                else: break
-            try:
-                client = cm.find(email=entered_data[Client]['email'])[0]
-            except IndexError:
-                if _get_data_choice('User with this email was not found, please register first...', 'start') == 1: continue
-                else: break
+            if not email_entered:
+                status = _get_and_test_models_attrs(Client, 'start', 'email')
+                if type(status) == bool:
+                    if status: continue
+                    else: break
+                try:
+                    client = cm.find(email=entered_data[Client]['email'])[0]
+                    email_entered = True
+                except IndexError:
+                    if _get_data_choice(
+                        'User with this email was not found, please register\
+ first...', 'start') == 1: continue
+                    else: break
             
-            status = _get_and_test_models_attrs(Client, 'start', 'password', confirm_password=False)
+            status = _get_and_test_models_attrs(Client, 'start', 'password',
+                confirm_password=False)
             if type(status) == bool:
                 if status: continue
                 else: break
@@ -104,7 +110,8 @@ def _login():
                 active_client = client
                 break
             else:
-                if _get_data_choice('Wrong password...', 'start') == 1: continue
+                if _get_data_choice('Wrong password...',
+                    'start') == 1: continue
                 else: break
         except Exception as e:
             if _is_user_choose_continue(e, 'Client', 'start'): continue
@@ -120,7 +127,8 @@ def _create_user():
     while True:
         wait('c')
 
-        status = _get_and_test_models_attrs(Client, 'start', 'email', 'first_name', 'last_name', 'password')
+        status = _get_and_test_models_attrs(Client, 'start', 'email',
+            'first_name', 'last_name', 'password')
         if type(status) == bool:
             if status: continue
             break
@@ -182,8 +190,7 @@ def _show_home_screen(custom_title=None):
             if active_client != None: break
         elif choice == 0:
             wait('c')
-            print(exit_msg)
-            sys.exit(0)
+            raise SystemExit(exit_msg)
 
 
 _show_home_screen()
@@ -331,6 +338,12 @@ while not exit:
             elif o == 0: break
 
     elif choice == 2: # Catalog
+        wait('a', not_ready_msg)
+        continue
+
+        title = _add_sections_to_title(title, 'Catalog')
+        v = _paginator.paginate_all_categories(title, catsm)
+        print(v)
         # create shop products if not created
         get_selected_product(True,
             Product(name='test1', price_id=1, category_id=1),
@@ -365,7 +378,10 @@ while not exit:
             else:
                 active_client.order.itemList.append(product)
                 active_client.order.totalCost.amount += product.price.amount
-    elif choice == 3: # Order
+    elif choice == 3: # Cart
+        wait('a', not_ready_msg)
+        continue
+
         if active_client.order == None:
             wait('c')
             print('Cart is empty')
@@ -376,5 +392,4 @@ while not exit:
             wait('t')
     elif choice == 0: # Exit
         wait('c')
-        print(exit_msg)
-        break
+        raise SystemExit(exit_msg)

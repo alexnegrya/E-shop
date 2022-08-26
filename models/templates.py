@@ -67,7 +67,9 @@ class Model:
         model_attrs = attrs.copy()
         try: model_attrs.pop(self.FIELDS[0])
         except KeyError: pass
-        if tuple(model_attrs.keys()) != self.FIELDS[1:]: raise ValueError('all attrs for model FIELDS (exclude PK) must be specified')
+        for attr in model_attrs:
+            if attr not in self.FIELDS[1:]: raise ValueError(
+                f'attrs "{attr}" field is not present in model FIELDS')
         [setattr(self, attr, value) for attr, value in attrs.items()]
         if self.WITH_ID and 'id' not in attrs: self.id = None
 
@@ -98,14 +100,20 @@ class Model:
     def __validate_known_field(self, name: str, value):
         if name == 'id':
             if self.inDB:
-                if type(value) != int: raise ValueError('id must have an int value')
+                if type(value) != int: raise ValueError(
+                    'id must have an int value')
         elif name == 'inDB':
-            if value not in (True, False): raise ValueError('inDB attr must have True/False value only')
+            if value not in (True, False): raise ValueError(
+                'inDB attr must have True/False value only')
         elif name in ('created', 'updated'):
-            if not getattr(self, f'WITH_{name.upper()}'): raise ValueError(f'{name} attr is not supported by this model')
-            if value != None and type(value) != datetime: raise TypeError(f'{name} must have datetime object value')
+            if not getattr(self, f'WITH_{name.upper()}'): raise ValueError(
+                f'{name} attr is not supported by this model')
+            if value != None and type(value) != datetime: raise TypeError(
+                f'{name} must have datetime object value')
 
-    def validate_model_field(self, name: str, value): raise NotImplementedError(f'method not implemeted in "{self.__class__.__name__}" model')
+    def validate_model_field(self, name: str, value):
+        raise NotImplementedError(
+            f'method not implemeted in "{self.__class__.__name__}" model')
     
     def __setattr__(self, name: str, value):
         self.__validate_known_field(name, value)
@@ -146,12 +154,15 @@ class ModelManager:
         self.pk = self.fields[0]
         self.__doc__ = f"{self.MODEL.__class__.__name__} models manager with methods for theirs CRUD in DB."
     
-    def __str__(self): return ''.join(self.all()) if len(self.all()) > 0 else f'\nNo {self.plural.lower()} here\n'
+    def __str__(self): return ''.join(self.all()) if len(self.all()) > 0 else \
+        f'\nNo {self.plural.lower()} here\n'
     
-    def __repr__(self): return str(self.pgds.select('*', from_table=self.table))
+    def __repr__(self): return str(self.pgds.select('*',
+        from_table=self.table))
 
     def __getattr__(self, name: str):
-        if name == 'sort' and self.with_created or self.with_updated: return self.sort
+        if name == 'sort' and self.with_created or \
+            self.with_updated: return self.sort
 
     def __get_wrapped_data(self, data: list[dict]) -> list:
         models = [self.MODEL(**row) for row in data]
@@ -162,46 +173,63 @@ class ModelManager:
         fields = list(self.fields)
         if self.with_created: fields.append('created')
         if self.with_updated: fields.append('updated')
-        if any([field not in fields for field in values.keys()]): raise ValueError('unknown field(s) specified')
+        if any([field not in fields for field in values.keys()]):
+            raise ValueError('unknown field(s) specified')
 
     def __select_by_pk(self, pk):
         if pk == None: raise TypeError('pk arg do not must be None')
-        data = self.pgds.select(*self.fields, from_table=self.table, where=f'{self.pk} = {pk}')
-        if len(data) > 1: raise ValueError(f'more then one model with "{pk}" PK found')
+        data = self.pgds.select(*self.fields, from_table=self.table,
+            where=f'{self.pk} = {pk}')
+        if len(data) > 1: raise ValueError(
+            f'more then one model with "{pk}" PK found')
         return self.__get_wrapped_data(data)[0]
 
     def __update_row(self, model: Model):
         data = model.get_data()
         self.__validate_values(data)
-        self.pgds.update(self.table, {self.pk: getattr(model, self.pk), }, **data)
+        self.pgds.update(self.table, {self.pk: getattr(model, self.pk)}, **data)
+    
+    def count(self) -> int: return list(self.pgds.select(
+        f'count({self.pk})')[0].values())[0]
 
-    def all(self):
+    def all(self) -> list:
         data = self.pgds.select(*self.fields, from_table=self.table)
         return self.__get_wrapped_data(data)
 
     def sort(self, *models) -> list:
-        l, attrs = [], [attr for attr in ('updated', 'created') if getattr(self, f'with_{attr}')]
+        l, attrs = [], [attr for attr in ('updated', 'created') if getattr(
+            self, f'with_{attr}')]
         for attr in attrs:
-            for dt in sorted([getattr(model, attr) for model in models if getattr(model, attr) != None])[::-1]:
-                l += [model for model in models if getattr(model, attr) == dt and model not in l]
+            for dt in sorted([getattr(model, attr) for model in models \
+              if getattr(model, attr) != None])[::-1]:
+                l += [model for model in models if getattr(model, attr) == dt \
+                    and model not in l]
         return l + [model for model in models if model not in l]
 
-    def save(self, *models):
+    def save(self, *models) -> list:
         models_pkeys = []
         for model in models:
-            if type(model) != self.MODEL: raise TypeError(f'all objects should be only {self.plural} type')
+            if type(model) != self.MODEL: raise TypeError(
+                f'all objects should be only {self.plural} type')
             if model.inDB:
                 pk = getattr(model, self.pk)
                 self.__update_row(model)
-            else: pk = self.pgds.insert(self.table, self.pk, **model.get_data())[0][0]
+            else: pk = self.pgds.insert(self.table, self.pk, **model.get_data()
+                )[0][0]
             models_pkeys.append(pk)
         return [self.find(**{self.pk: pkey}) for pkey in models_pkeys]
 
-    def find(self, **values):
+    def find(self, **values) -> list:
         self.__validate_values(values)
-        if tuple(values.keys()) == (self.pk,): return self.__select_by_pk(values[self.pk])
-        data = self.pgds.select(*self.fields, from_table=self.table, where={f: v for f, v in values.items()})
+        if tuple(values.keys()) == (self.pk,): return self.__select_by_pk(
+            values[self.pk])
+        data = self.pgds.select(*self.fields, from_table=self.table,
+            where={f: v for f, v in values.items()})
         return self.__get_wrapped_data(data)
     
-    def delete(self, *models_or_pkeys): [self.pgds.delete(self.table,
-        f'{self.pk} = {getattr(obj, self.pk) if type(obj) != int else obj}') for obj in models_or_pkeys]
+    def delete(self, *models_or_pkeys) -> None:
+        if len(models_or_pkeys) > 0:
+            [self.pgds.delete(self.table, f'{self.pk} =\
+ {getattr(obj, self.pk) if type(obj) != int else obj}') for obj in \
+            models_or_pkeys]
+        else: self.pgds.delete(self.table)

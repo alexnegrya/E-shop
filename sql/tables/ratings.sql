@@ -1,7 +1,7 @@
 CREATE TABLE ratings
 (
     id int GENERATED ALWAYS AS IDENTITY,
-    stars decimal CHECK (stars >= 0 AND stars <= 10) NOT NULL,
+    stars int CHECK (stars >= 0 AND stars <= 10) NOT NULL,
     review varchar(500),
     created timestamp,
     updated timestamp,

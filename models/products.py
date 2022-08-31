@@ -3,7 +3,7 @@ from .templates import *
 
 class Product(Model):
     TABLE = 'products'
-    FIELDS = ('id', 'name', 'price_id', 'category_id')
+    FIELDS = ('id', 'name', 'price', 'category_id')
     TEST_VALUES = (1, 'Test', 1, 1)
     WITH_CREATED = True
     WITH_UPDATED = True
@@ -29,7 +29,7 @@ class Product(Model):
                     if repeated_numbers[splited[i]] == len(value):
                         raise NameError(
                             'the name contains only the same letters')
-        elif name.endswith('_id') and type(value) != int: raise TypeError('price id must have int value')
+        elif type(value) != int: raise TypeError(f'{name} must have int value')
 
 
 class ProductsManager(ModelManager):

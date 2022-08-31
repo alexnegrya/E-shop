@@ -2,10 +2,7 @@
 
 
 -- ! With this syntax is important to observe sequence of inserting data !
-/* 
-    First needed to insert category and money because product columns
-    "category_id" and "price_id" need categories.id and money.id
-*/
+-- First needed to insert category because product column "category_id" need categories.id
 
 
 -- Inserting addresses
@@ -54,35 +51,19 @@ INSERT INTO contacts(type, value, client_id) VALUES('Phone', '30-2045678956', 1)
 INSERT INTO contacts(type, value, client_id) VALUES('Telegram', '@alexeynebo', 2);
 INSERT INTO contacts(type, value, client_id) VALUES('Gmail', 'ionpopa@gmail.com', 3);
 
--- Inserting money
--- Money for products
-INSERT INTO money(amount) VALUES(1000);
-INSERT INTO money(amount) VALUES(1500);
-INSERT INTO money(amount) VALUES(1700);
-INSERT INTO money(amount) VALUES(15000);
-INSERT INTO money(amount) VALUES(60000);
-INSERT INTO money(amount) VALUES(2000);
--- Money for payments
-INSERT INTO money(amount) VALUES(0);
-INSERT INTO money(amount) VALUES(0);
-INSERT INTO money(amount) VALUES(0);
--- Money for services
-INSERT INTO money(amount) VALUES(100);
-INSERT INTO money(amount) VALUES(50);
-
 -- Inserting services
-INSERT INTO services(name, description, price_id)
-VALUES('Express delivery', 'Your products will be delivered in 1-3 days.', 10);
-INSERT INTO services(name, description, price_id)
-VALUES('Delivery to the door', 'Your products will be delivered to the door of your home.', 11);
+INSERT INTO services(name, description, price)
+VALUES('Express delivery', 'Your products will be delivered in 1-3 days.', 100);
+INSERT INTO services(name, description, price)
+VALUES('Delivery to the door', 'Your products will be delivered to the door of your home.', 50);
 
 -- Inserting products
-INSERT INTO products(name, created, price_id, category_id) VALUES('iPhone XI', now(), 1, 1);
-INSERT INTO products(name, created, price_id, category_id) VALUES('iPhone XII', now(), 2, 1);
-INSERT INTO products(name, created, price_id, category_id) VALUES('Lenovo Pad Pro', now(), 3, 2);
-INSERT INTO products(name, created, price_id, category_id) VALUES('Lenovo AIII', now(), 4, 2);
-INSERT INTO products(name, created, price_id, category_id) VALUES('Acer Gaming Pro X', now(), 5, 3);
-INSERT INTO products(name, created, price_id, category_id) VALUES('Asus Ultimate', now(), 6, 3);
+INSERT INTO products(name, created, price, category_id) VALUES('iPhone XI', now(), 1000, 1);
+INSERT INTO products(name, created, price, category_id) VALUES('iPhone XII', now(), 1500, 1);
+INSERT INTO products(name, created, price, category_id) VALUES('Lenovo Pad Pro', now(), 1700, 2);
+INSERT INTO products(name, created, price, category_id) VALUES('Lenovo AIII', now(), 15000, 2);
+INSERT INTO products(name, created, price, category_id) VALUES('Acer Gaming Pro X', now(), 60000, 3);
+INSERT INTO products(name, created, price, category_id) VALUES('Asus Ultimate', now(), 2000, 3);
 
 -- Inserting stock items
 INSERT INTO stock_items(quantity, product_id) VALUES(26, 1);
@@ -100,27 +81,27 @@ INSERT INTO ratings(stars, review, product_id, client_id)
 VALUES(10, 'Very good laptop for gaming and work. I have no complaints.', 6, 1);
 INSERT INTO ratings(stars, review, product_id, client_id)
 VALUES(9, 'Plus - the price and quality match.
- Minus - the camera could have been made better for such money', 2, 2);
+ Minus - the camera could have been made better for that kind of money.', 2, 2);
 INSERT INTO ratings(stars, review, product_id, client_id)
 VALUES(6, 'Tablet is good for work, has good screen, but it not for games. 
 I am upset because I like to play on tablets.', 3, 2);
 INSERT INTO ratings(stars, review, product_id, client_id)
 VALUES(8, 'I took this tablet, because it has good price. 
-It has a big and light screen, good sound and quality camera for your money. 
+It has a big and light screen, good sound and quality camera for this price. 
 Who have small incomes and need a tablet, recommend this tablet.', 4, 3);
 INSERT INTO ratings(stars, review, product_id, client_id)
 VALUES(7, 'Laptop is very good, 
 but it was delivered not on time and packed poorly, which is why it was scratched.', 5, 3);
 
 -- Inserting payments
-INSERT INTO payments(method, price_id) VALUES('PayPal', 7);
-INSERT INTO payments(method, price_id) VALUES('WebMoney', 8);
-INSERT INTO payments(method, price_id) VALUES('QIWI', 9);
+INSERT INTO payments(method, price) VALUES('PayPal', 0);
+INSERT INTO payments(method, price) VALUES('WebMoney', 0);
+INSERT INTO payments(method, price) VALUES('QIWI', 0);
 
 -- Inserting orders
-INSERT INTO orders(created, total_cost_id, payment_id, client_id) VALUES(now(), 7, 1, 1);
-INSERT INTO orders(created, total_cost_id, payment_id, client_id) VALUES(now(),8, 2, 2);
-INSERT INTO orders(created, total_cost_id, payment_id, client_id) VALUES(now(), 9, 3, 3);
+INSERT INTO orders(created, total_cost, payment_id, client_id) VALUES(now(), 0, 1, 1);
+INSERT INTO orders(created, total_cost, payment_id, client_id) VALUES(now(), 0, 2, 2);
+INSERT INTO orders(created, total_cost, payment_id, client_id) VALUES(now(), 0, 3, 3);
 
 -- Inserting order items
 INSERT INTO order_items(quantity, product_id, order_id) VALUES(1, 1, 1);
@@ -130,50 +111,13 @@ INSERT INTO order_items(quantity, product_id, order_id) VALUES(1, 3, 2);
 INSERT INTO order_items(quantity, product_id, order_id) VALUES(1, 4, 3);
 INSERT INTO order_items(quantity, product_id, order_id) VALUES(1, 5, 3);
 
--- Updating orders total cost money
-UPDATE money
-SET amount = 3000
-WHERE id = 7;
-UPDATE money
-SET amount = 3200
-WHERE id = 8;
-UPDATE money
-SET amount = 75000
-WHERE id = 9;
-
-
-/* ///////////////////////////////// Products references scheme /////////////////////////////////
-
-                                       ----------------------
-                                       |     categories     |
-                                       | ------------------ |
-                                       | id | name          |
-                                       | ------------------ |
-     --------------------------------> | 1  | 'Smartphones' |
-     |                                 ----------------------
-     | 
-     |                             ---------------
-     |                             |    money    |
-     |                             | ------------|
-     |                             | id | amount |
-     |                             | ------------|
-     |                       ----> | 1  | 1000   |
-     |                       | --> | 2  | 1500   |
-     |                       | |   ---------------
-     |                       | |
-     |                       | ---------------------------------------------------------------
-     |                       --------------------------------------------------------------- |
-     |                                                                                     | |
-     |  --------------------------------------------------------------------------------   | |
-     |  |                                    products                                  |   | |
-     |  | ---------------------------------------------------------------------------- |   | |
-     |  | id |     name     |        created        | updated | category_id | price_id |   | |
-     |  | ---------------------------------------------------------------------------- |   | |
-     |  | 1  | 'iPhone XI'  | '2021-01-01 00:00:01' | null    | 1           | 1        |<--- |
-     |  | 2  | 'iPhone XII' | '2021-01-01 00:00:01' | null    | 1           | 2        |<-----
-     |  --------------------------------------------------------------------------------  
-     |                                                          ^                         
-     |                                                          |                     
-     ------------------------------------------------------------
-
-*/
+-- Updating orders total cost
+UPDATE orders
+SET total_cost = 3000
+WHERE id = 1;
+UPDATE orders
+SET total_cost = 3200
+WHERE id = 2;
+UPDATE orders
+SET total_cost = 75000
+WHERE id = 3;

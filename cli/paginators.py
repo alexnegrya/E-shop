@@ -189,8 +189,8 @@ previous menu{" or enter number of item which one you want to choose" if numerat
             else: # Return category with no children
                 return cats_data['cats']['all'][choice - 1]
         
-    def paginate_products(self, title: str, prods_manager, money_manager,
-      *products, cats_manager=None):
+    def paginate_products(self, title: str, prods_manager, *products,
+      cats_manager=None):
         """
         Returns product selected by user or `None` if user wants come back to 
         the previous menu.
@@ -199,7 +199,7 @@ previous menu{" or enter number of item which one you want to choose" if numerat
         prods = []
         for product in products:
             prod = f'{product.name} |\
- {money_manager.find(id=product.price_id).amount} MDL'
+ {product.price} MDL'
             if cats_manager != None: prod += self.__format_category(
                 cats_manager.find(id=product.category_id), cats_manager)
             prods.append(prod)

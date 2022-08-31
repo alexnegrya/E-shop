@@ -3,7 +3,7 @@ from .templates import *
 
 class Service(Model):
     TABLE = 'services'
-    FIELDS = ('id', 'name', 'description', 'price_id')
+    FIELDS = ('id', 'name', 'description', 'price')
     TEST_VALUES = (1, 'Test', 'Test', 1)
 
     def __setattr__(self, name, value):
@@ -26,7 +26,8 @@ class Service(Model):
                 for i in range(len(repeated_numbers)):
                     if repeated_numbers[splited[i]] == len(value):
                         raise NameError('the str value contains only the same letters')
-        elif name == 'price_id' and type(value) != int: raise TypeError(f'{name} must have int value')
+        elif name == 'price' and type(value) != int:
+            raise TypeError(f'{name} must have int value')
 
 
 class ServicesManager(ModelManager):

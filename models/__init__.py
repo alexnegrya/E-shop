@@ -1,7 +1,6 @@
 from .addresses import *
 from .categories import *
 from .clients import *
-from .money import *
 from .orders_items import *
 from .orders import *
 from .payments import *
@@ -17,7 +16,6 @@ __all__ = [
     'Address', 'AddressesManager',
     'Category', 'CategoriesManager',
     'Client', 'ClientsManager',
-    'Money', 'MoneyManager',
     'OrderItem', 'OrdersItemsManager',
     'Order', 'OrdersManager',
     'Payment', 'PaymentsManager',

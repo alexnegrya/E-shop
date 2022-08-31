@@ -1,4 +1,5 @@
 from os import system
+from textwrap import indent
 
 
 # Global config
@@ -68,6 +69,64 @@ def is_user_choice_confirmed() -> bool:
         if c != '': c = c[0]
         else: continue
         if c in ('y', 'n'): return c == 'y'
+
+
+def _get_formatted_rating(rating, clients_manager) -> str:
+    owner = clients_manager.find(id=rating.client_id)
+    full_name = f'{owner.first_name} {owner.last_name}'
+    stars = f'{"★" * rating.stars}{"☆" * (10 - rating.stars)}'
+    return f'  {full_name}   {stars}\n{indent(rating.review, prefix="    ")}'
+
+
+def _get_rating_type(rating_stars: int) -> str:
+    if rating_stars > 7: return 'positive'
+    elif rating_stars > 4: return 'average'
+    else: return 'negative'
+
+
+def _get_formatted_ratings_title(ratings_type: str, ratings_symbol: str
+  ) -> str: return ' '.join([ratings_symbol * 3,
+    ratings_type[0].upper() + ratings_type[1:], ratings_symbol * 3])
+
+
+def show_product_page(active_client, product, stock_items_manager,
+  ratings_manager, clients_manager) -> int:
+    quantity = stock_items_manager.find(product_id=product.id)[0].quantity
+    product_info = ' | '.join((product.name, f'{product.price} MDL',
+        f'{quantity} in stock' if quantity > 0 else 'Out of stock'))
+    
+    ratings = ratings_manager.find(product_id=product.id)
+    ratings_dict = {'positive': [], 'average': [], 'negative': []}
+    aclient_rating = None
+    for rating in ratings:
+        frating = _get_formatted_rating(rating, clients_manager)
+        if rating.client_id == active_client.id: aclient_rating = rating
+        else:
+            if all([len(ratings_dict[t]) == 3 for t in ratings_dict.keys()]):
+                break
+            rating_type = _get_rating_type(rating.stars)
+            if len(ratings_dict[rating_type]) < 3:
+                ratings_dict[rating_type].append(frating)
+    RATINGS_SYMBOLS = {'positive': '+', 'average': '=', 'negative': '-'}
+    formatted_ratings = [
+        _get_formatted_ratings_title(name, RATINGS_SYMBOLS[name]) + '\n' + \
+'\n'.join(ratings_dict[name]) for name in ratings_dict.keys() if len(
+        ratings_dict[name]) > 0]
+    fratings = '-=+ Ratings +=-\n\n'
+    fratings += '\n\n'.join(formatted_ratings) if len(formatted_ratings) > 0 \
+        else 'Neither one rating has been written yet...'
+
+    options = ['Add to cart', 'View all ratings',
+        'Leave a rating', 'Back to main menu']
+    if aclient_rating != None:
+        options[2] = 'Change my rating'
+        rating_type = _get_rating_type(aclient_rating.stars)
+        title = _get_formatted_ratings_title(rating_type,
+            RATINGS_SYMBOLS[rating_type])
+        formatted_rating = _get_formatted_rating(aclient_rating,
+            clients_manager)
+        fratings += f'\n\n{title}\n\n{formatted_rating}'
+    return get_user_choice(*options, title=f'{product_info}\n\n{fratings}')
 
 
 # Additional functions

@@ -32,9 +32,9 @@ else:
 
 # Creating missing tables
 TABLES = (
-    'addresses', 'categories', 'clients', 'contacts', 'money',
-    'payments', 'products', 'ratings', 'services', 'shops',
-    'stock_items', 'orders', 'orders_items'
+    'addresses', 'categories', 'clients', 'contacts', 'payments',
+    'products', 'ratings', 'services', 'shops', 'stock_items',
+    'orders', 'orders_items'
 )
 created_tables = []
 for table in TABLES:
@@ -58,10 +58,12 @@ logger.info(f'The following missing database tables created: {", ".join(created_
 
 
 # Repositories initialization
-pm = ProductsManager(pgds)
 cm = ClientsManager(pgds)
 am = AddressesManager(pgds)
 conm = ContactsManager(pgds)
 catsm = CategoriesManager(pgds)
+pm = ProductsManager(pgds)
+sim = StockItemsManager(pgds)
+rm = RatingsManager(pgds)
 
-logger.info('Models factories intialized')
+logger.info('Models managers intialized')

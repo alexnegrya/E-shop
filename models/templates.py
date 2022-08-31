@@ -62,6 +62,7 @@ class Model:
         self.WITH_ID = 'id' in self.FIELDS
         if self.WITH_CREATED: self.created = datetime.now()
         if self.WITH_UPDATED: self.updated = None
+        self.KNOWN_FIELDS = ('id', 'inDB', 'created', 'updated')
         self.inDB = False
 
         model_attrs = attrs.copy()
@@ -117,7 +118,9 @@ class Model:
     
     def __setattr__(self, name: str, value):
         self.__validate_known_field(name, value)
-        self.validate_model_field(name, value)
+        if getattr(self, 'KNOWN_FIELDS', None) != None and \
+          name not in self.KNOWN_FIELDS and not name.startswith('_'):
+            self.validate_model_field(name, value)
         if getattr(self, 'setattr_value', None) == None: object.__setattr__(self, name, value)
         else:
             object.__setattr__(self, name, self.setattr_value)

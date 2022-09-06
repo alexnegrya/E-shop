@@ -31,7 +31,8 @@ def _is_user_choose_continue(exception: Exception, model_name: str, prev_menu_na
 
 
 def _get_and_test_models_attrs(model, prev_menu_name: str, *attrs: tuple[str],
-        confirm_password=True, debug=False, old_model=None, preattr_str=None, show_hint=True):
+        confirm_password=True, debug=False, old_model=None, preattr_str=None,
+        show_hint=True, attrs_to_int=None):
     """
     Accepts model (will be used for test objects creation) and list of attrs names.
     Get all data using inputs, test it into global `entered_data` dict if no exception occured.
@@ -39,8 +40,18 @@ def _get_and_test_models_attrs(model, prev_menu_name: str, *attrs: tuple[str],
     """
     global entered_data
     model_name = model.__class__.__name__
+    if attrs_to_int != None:
+        an = 'attrs_to_int arg'
+        if type(attrs_to_int) != tuple: raise TypeError(
+            f'{an} arg must be a tuple')
+        elif any([type(attr) != str for attr in attrs_to_int]):
+            raise TypeError(f'{an} must contains only str values')
+        elif any([attr not in attrs for attr in attrs_to_int]):
+            raise ValueError(
+                f'all values in {an} must be present in attrs arg')
     preattr_str = ' ' if preattr_str == None else f' {preattr_str} '
-    if old_model != None and show_hint: print('Hint: press enter to keep the old value, it works only if old value exists.\n')
+    if old_model != None and show_hint: print('Hint: press enter to keep the'
+        ' old value, it works only if old value exists.\n')
 
     for attr in attrs:
         attr_data = attr.split('|')
@@ -66,8 +77,13 @@ def _get_and_test_models_attrs(model, prev_menu_name: str, *attrs: tuple[str],
                     else: raise e
                 confirm = getpass(q + ' again: ')
                 if value != confirm:
-                    if _get_data_choice('Passwords not match...', 'start') == 1: return True
-                    return False
+                    return _get_data_choice('Passwords not match...',
+                        prev_menu_name) == 1
+            if attrs_to_int != None and attr in attrs_to_int:
+                try: value = int(value)
+                except ValueError: return _get_data_choice(
+                    f'{attr_name[0].upper() + attr_name[1:]} must be a ' +
+                    'number...', 'start') == 1
             try:
                 validate_model_attrs(model, **{attr: value})
                 entered_data[model][attr] = value
@@ -338,38 +354,114 @@ while not exit:
             elif o == 0: break
 
     elif choice == 2: # Catalog
-        wait('a', not_ready_msg)
-        continue
+        title = _add_sections_to_title(title, 'Catalog')
+        show_all_categories = True
+        while show_all_categories:
+            category = _paginator.paginate_all_categories(title, catm)
+            if category != None:
+                show_this_cat_prods = True
+                while show_this_cat_prods:
+                    product = _paginator.paginate_products(title, pm, *pm.find(
+                        category_id=category.id))
+                    if product != None:
+                        show_prod_page = True
+                        while show_prod_page:
+                            o = show_product_page(active_client, product,
+                                sim, rm, cm)
 
-        if len(pm.all()) == 0:
-            data = tds.getTestProducts()
-            for obj in data:
-                p = Product(obj['title'], Money(int(obj['price']), 1), 1)
-                p.id = obj['id']
-                pm.save(p)
-        # print products
-        add = print_products(pm.all())
-        # buy product
-        if add:
-            # get product id by user input and check it
-            try:
-                productId = int(input('\nEnter product id: '))
-                if productId < (len(pm.all()) - len(pm.all()) + 1)\
-                    or productId > len(pm.all()):
-                    print('\nProduct with this id not exist!')
-                    wait('t')
-                    continue
-            except:
-                print('\nWrong product id!')
-                wait('t')
-                continue
-            # find product and order of active user
-            product = pm.findById(productId, False)
-            if active_client.order == None:
-                active_client.order = Order([product], Money(product.price.amount, 1), 1, 1)
-            else:
-                active_client.order.itemList.append(product)
-                active_client.order.totalCost.amount += product.price.amount
+                            if o == 'Add to cart':
+                                wait('c')
+                                try:
+                                    quantity = int(input(
+                                        'How much do you want to add? '))
+                                except ValueError:
+                                    wait('t', 'Please enter a number')
+                                    continue
+
+                                orders = om.find(client_id=active_client.id)
+                                if len(orders) == 0:
+                                    payment = paym.save(Payment(price=0,
+                                        method=None))[0]
+                                    order = om.save(Order(
+                                        payment_id=payment.id,
+                                        client_id=active_client.id))[0]
+                                    oim.save(OrderItem(quantity=quantity,
+                                        product_id=product.id,
+                                        order_id=order.id))
+                                else:
+                                    order = om.find(
+                                        client_id=active_client.id)[0]
+                                    order_items = oim.find(
+                                        product_id=product.id,
+                                        order_id=order.id)
+                                    if len(order_items) == 0:
+                                        order_item = OrderItem(
+                                            quantity=quantity,
+                                            product_id=product.id,
+                                            order_id=order.id)
+                                    else:
+                                        order_item = order_items[0]
+                                        order_item.quantity += quantity
+                                    oim.save(order_item)
+                                input('\nAdded to cart successfully, current' +
+                                    ' product count in your cart: ' +
+                                    str(order_item.quantity) + ' ')
+
+                            elif o == 'View all ratings':
+                                all_ratings = rm.sort(*rm.find(
+                                    product_id=product.id))
+                                formatted_ratings = []
+                                for i in range(len(all_ratings)):
+                                    rating = get_formatted_rating(
+                                        all_ratings[i], cm)
+                                    if i != len(all_ratings) - 1:
+                                        rating += '\n'
+                                    formatted_ratings.append(rating)
+                                _paginator.paginate(*formatted_ratings,
+                                    numerate=False)
+
+                            elif o == 'Leave a rating':
+                                while True:
+                                    wait('c')
+                                    status = _get_and_test_models_attrs(Rating,
+                                        'product page', 'stars', 'review',
+                                        attrs_to_int=('stars',))
+                                    if type(status) == bool:
+                                        if status: continue
+                                        else: break
+                                    rm.save(Rating(
+                                        stars=entered_data[Rating]['stars'],
+                                        review=entered_data[Rating]['review'],
+                                        product_id=product.id,
+                                        client_id=active_client.id))
+                                    break
+                                input('\nRating left successfully, '
+                                    'press [Enter] to continue... ')
+
+                            elif o == 'Change my rating':
+                                rating = rm.find(product_id=product.id,
+                                    client_id=active_client.id)[0]
+                                while True:
+                                    wait('c')
+                                    status = _get_and_test_models_attrs(Rating,
+                                        'product page', 'stars', 'review',
+                                        old_model=rating,
+                                        attrs_to_int=('stars',))
+                                    if type(status) == bool:
+                                        if status: continue
+                                        else: break
+                                    rating.stars = entered_data[Rating][
+                                        'stars']
+                                    rating.review = entered_data[Rating][
+                                        'review']
+                                    rm.save(rating)
+                                    break
+
+                            elif o == 'Back to this category products':
+                                show_prod_page = False
+                    else: show_this_cat_prods = False
+            else: show_all_categories = False
+
     elif choice == 3: # Cart
         wait('a', not_ready_msg)
         continue

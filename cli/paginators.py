@@ -42,8 +42,9 @@ previous menu{" or enter number of item which one you want to choose" if numerat
             end_i = start_i + per_page
 
             # Print title and content
-            if title != None and type(title) == str: print(f'{title}\n')
-            else: raise TypeError('title must be str type')
+            if title != None:
+                if type(title) == str: print(f'{title}\n')
+                else: raise TypeError('title must be str type')
             if numerate: [print(f'{n}.', obj) \
                 for n, obj in enumerate(objs[start_i:end_i], 1)]
             else: [print(obj) for obj in objs[start_i:end_i]]
@@ -148,7 +149,7 @@ previous menu{" or enter number of item which one you want to choose" if numerat
         """
         For user navigation between categories: with no parent first and after
         their children. User can select only category with no children.
-        Returns categoy selected by user.
+        Returns category selected by user.
         """
 
         # For cats with no parent
@@ -187,15 +188,18 @@ previous menu{" or enter number of item which one you want to choose" if numerat
                 self._cats_indexes = [i2, i2 + 1]
                 return self.paginate_all_categories(title, cats_manager)
             else: # Return category with no children
+                del self._cats, self._cats_indexes
                 return cats_data['cats']['all'][choice - 1]
+        else: del self._cats, self._cats_indexes
         
     def paginate_products(self, title: str, prods_manager, *products,
       cats_manager=None):
         """
-        Returns product selected by user or `None` if user wants come back to 
-        the previous menu.
+        Add products categories names to their title if `cats_manager` argument
+        received. Returns product selected by user or `None` if user wants come
+        back to the previous menu.
         """
-        products = prods_manager.sort(products)
+        products = prods_manager.sort(*products)
         prods = []
         for product in products:
             prod = f'{product.name} |\

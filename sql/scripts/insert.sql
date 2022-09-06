@@ -19,9 +19,9 @@ VALUES('Moldova', 'Chișinău 2001', 'Bulevardul Ștefan cel Mare și Sfînt', '
 -- Inserting shops
 INSERT INTO shops(working_hours, address_id) VALUES
 (
-    '{{00:00:00, 23:59:999, 23:59:999}, {00:00:00, 23:59:999, 23:59:999}, {00:00:00, 23:59:999, 23:59:999}, 
-    {00:00:00, 23:59:999, 23:59:999}, {00:00:00, 23:59:999, 23:59:999}, {00:00:00, 23:59:999, 23:59:999}, 
-    {00:00:00, 23:59:999, 23:59:999}}', 1
+    '{{00:00:00, 24:00:00, 24:00:00}, {00:00:00, 24:00:00, 24:00:00}, {00:00:00, 24:00:00, 24:00:00}, 
+    {00:00:00, 24:00:00, 24:00:00}, {00:00:00, 24:00:00, 24:00:00}, {00:00:00, 24:00:00, 24:00:00}, 
+    {00:00:00, 24:00:00, 24:00:00}}', 1
 );
 INSERT INTO shops(working_hours, address_id) VALUES
 (
@@ -44,7 +44,7 @@ INSERT INTO categories(name, created) VALUES('Laptops', now());
 -- Inserting clients
 INSERT INTO clients(email, first_name, last_name, password, created, address_id) VALUES('johndoe@gmail.com', 'John', 'Doe', 'john1290', now(), 1);
 INSERT INTO clients(email, first_name, last_name, password, created, address_id) VALUES('alexeynebo@mail.ru', 'Алексей', 'Небесный', 'alexeyn_120', now(), 2);
-INSERT INTO clients(email, first_name, last_name, password, created, address_id) VALUES('ionut931@outlook.com', 'Ion', 'Popa', 'IoNpSocial' now(), 3);
+INSERT INTO clients(email, first_name, last_name, password, created, address_id) VALUES('ionut931@outlook.com', 'Ion', 'Popa', 'IoNpSocial', now(), 3);
 
 -- Inserting contacts
 INSERT INTO contacts(type, value, client_id) VALUES('Phone', '30-2045678956', 1);
@@ -99,25 +99,25 @@ INSERT INTO payments(method, price) VALUES('WebMoney', 0);
 INSERT INTO payments(method, price) VALUES('QIWI', 0);
 
 -- Inserting orders
-INSERT INTO orders(created, total_cost, payment_id, client_id) VALUES(now(), 0, 1, 1);
-INSERT INTO orders(created, total_cost, payment_id, client_id) VALUES(now(), 0, 2, 2);
-INSERT INTO orders(created, total_cost, payment_id, client_id) VALUES(now(), 0, 3, 3);
+INSERT INTO orders(created, payment_id, client_id) VALUES(now(), 1, 1);
+INSERT INTO orders(created, payment_id, client_id) VALUES(now(), 2, 2);
+INSERT INTO orders(created, payment_id, client_id) VALUES(now(), 3, 3);
 
 -- Inserting order items
-INSERT INTO order_items(quantity, product_id, order_id) VALUES(1, 1, 1);
-INSERT INTO order_items(quantity, product_id, order_id) VALUES(1, 6, 1);
-INSERT INTO order_items(quantity, product_id, order_id) VALUES(1, 2, 2);
-INSERT INTO order_items(quantity, product_id, order_id) VALUES(1, 3, 2);
-INSERT INTO order_items(quantity, product_id, order_id) VALUES(1, 4, 3);
-INSERT INTO order_items(quantity, product_id, order_id) VALUES(1, 5, 3);
+INSERT INTO orders_items(quantity, product_id, order_id) VALUES(1, 1, 1);
+INSERT INTO orders_items(quantity, product_id, order_id) VALUES(1, 6, 1);
+INSERT INTO orders_items(quantity, product_id, order_id) VALUES(1, 2, 2);
+INSERT INTO orders_items(quantity, product_id, order_id) VALUES(1, 3, 2);
+INSERT INTO orders_items(quantity, product_id, order_id) VALUES(1, 4, 3);
+INSERT INTO orders_items(quantity, product_id, order_id) VALUES(1, 5, 3);
 
 -- Updating orders total cost
-UPDATE orders
-SET total_cost = 3000
+UPDATE payments
+SET price = 3000
 WHERE id = 1;
-UPDATE orders
-SET total_cost = 3200
+UPDATE payments
+SET price = 3200
 WHERE id = 2;
-UPDATE orders
-SET total_cost = 75000
+UPDATE payments
+SET price = 75000
 WHERE id = 3;

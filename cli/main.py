@@ -13,7 +13,7 @@ not_ready_msg = 'This functional coming soon, please wait'
 # Options (described which models and for which operations will be used in each option)
 main_options = (
     'Account', # Client CRUD, Address CRUD, Contact CRUD
-    'Catalog (coming soon)', # Category R, Product page - Product R, StockItem R, Rating CRU, Money CRU, Order CU, OrderItem CU
+    'Catalog', # Category R, Product page - Product R, StockItem R, Rating CRU, Money CRU, Order CU, OrderItem CU
     'Cart (coming soon)', # Order RUD, OrderItem RUD, Service R, Shop R, Payment CRUD and other models related to this models
     'Exit'
 )
@@ -71,7 +71,7 @@ def is_user_choice_confirmed() -> bool:
         if c in ('y', 'n'): return c == 'y'
 
 
-def _get_formatted_rating(rating, clients_manager) -> str:
+def get_formatted_rating(rating, clients_manager) -> str:
     owner = clients_manager.find(id=rating.client_id)
     full_name = f'{owner.first_name} {owner.last_name}'
     stars = f'{"★" * rating.stars}{"☆" * (10 - rating.stars)}'
@@ -90,7 +90,11 @@ def _get_formatted_ratings_title(ratings_type: str, ratings_symbol: str
 
 
 def show_product_page(active_client, product, stock_items_manager,
-  ratings_manager, clients_manager) -> int:
+  ratings_manager, clients_manager) -> str:
+    """
+    Returns option (not it index) selected by user.
+    """
+
     quantity = stock_items_manager.find(product_id=product.id)[0].quantity
     product_info = ' | '.join((product.name, f'{product.price} MDL',
         f'{quantity} in stock' if quantity > 0 else 'Out of stock'))
@@ -99,7 +103,7 @@ def show_product_page(active_client, product, stock_items_manager,
     ratings_dict = {'positive': [], 'average': [], 'negative': []}
     aclient_rating = None
     for rating in ratings:
-        frating = _get_formatted_rating(rating, clients_manager)
+        frating = get_formatted_rating(rating, clients_manager)
         if rating.client_id == active_client.id: aclient_rating = rating
         else:
             if all([len(ratings_dict[t]) == 3 for t in ratings_dict.keys()]):
@@ -117,16 +121,15 @@ def show_product_page(active_client, product, stock_items_manager,
         else 'Neither one rating has been written yet...'
 
     options = ['Add to cart', 'View all ratings',
-        'Leave a rating', 'Back to main menu']
+        'Leave a rating', 'Back to this category products']
     if aclient_rating != None:
         options[2] = 'Change my rating'
-        rating_type = _get_rating_type(aclient_rating.stars)
-        title = _get_formatted_ratings_title(rating_type,
-            RATINGS_SYMBOLS[rating_type])
-        formatted_rating = _get_formatted_rating(aclient_rating,
+        formatted_rating = get_formatted_rating(aclient_rating,
             clients_manager)
-        fratings += f'\n\n{title}\n\n{formatted_rating}'
-    return get_user_choice(*options, title=f'{product_info}\n\n{fratings}')
+        fratings += f'\n\nYour rating:\n{formatted_rating}'
+    o = get_user_choice(*options, title=f'{product_info}\n\n{fratings}')
+    if o == 0: return options[-1]
+    else: return options[o - 1]
 
 
 # Additional functions

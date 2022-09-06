@@ -3,9 +3,8 @@ CREATE TABLE orders
     id int GENERATED ALWAYS AS IDENTITY,
     created timestamp,
     updated timestamp,
-    total_cost integer NOT NULL,
-    payment_id integer NOT NULL,
-    client_id integer NOT NULL,
+    payment_id integer NOT NULL UNIQUE,
+    client_id integer NOT NULL UNIQUE,
     -- CONSTRAINTS/KEYS
     CONSTRAINT orders_pkey PRIMARY KEY (id),
     CONSTRAINT orders_payment_fkey

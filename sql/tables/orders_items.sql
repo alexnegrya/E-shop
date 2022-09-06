@@ -2,7 +2,7 @@ CREATE TABLE orders_items
 (
     id int GENERATED ALWAYS AS IDENTITY,
     quantity integer CHECK (quantity > 0) NOT NULL,
-    product_id integer NOT NULL UNIQUE,
+    product_id integer NOT NULL,
     order_id integer NOT NULL,
     -- CONSTRAINTS/KEYS
     CONSTRAINT order_items_pkey PRIMARY KEY (id),

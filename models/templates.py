@@ -34,7 +34,8 @@ class Model:
         elif any([type(v) != str for v in self.FIELDS]): raise TypeError('FIELDS must contains only str values')
         if len(self.TEST_VALUES) == 0: raise NotImplementedError()
         elif type(self.TEST_VALUES) != tuple: raise TypeError('TEST_VALUES must be a dict')
-        elif len(self.TEST_VALUES) != len(self.FIELDS): raise ValueError('TEST_VALUES values count must be the same as FIELDS count')
+        elif len(self.TEST_VALUES) != len(self.FIELDS): raise ValueError(
+            'TEST_VALUES values count must be the same as FIELDS count')
         for dt_attr in ('WITH_CREATED', 'WITH_UPDATED'):
             if getattr(self, dt_attr) not in (True, False): raise TypeError(f'{dt_attr} must have only True or False value')
 
@@ -185,7 +186,9 @@ class ModelManager:
             where=f'{self.pk} = {pk}')
         if len(data) > 1: raise ValueError(
             f'more then one model with "{pk}" PK found')
-        return self.__get_wrapped_data(data)[0]
+        try:
+            return self.__get_wrapped_data(data)[0]
+        except IndexError: pass
 
     def __update_row(self, model: Model):
         data = model.get_data()
@@ -222,7 +225,7 @@ class ModelManager:
             models_pkeys.append(pk)
         return [self.find(**{self.pk: pkey}) for pkey in models_pkeys]
 
-    def find(self, **values) -> list:
+    def find(self, **values):
         self.__validate_values(values)
         if tuple(values.keys()) == (self.pk,): return self.__select_by_pk(
             values[self.pk])

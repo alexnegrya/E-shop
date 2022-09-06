@@ -3,8 +3,8 @@ from .templates import *
 
 class Order(Model):
     TABLE = 'orders'
-    FIELDS = ('id', 'total_cost', 'payment_id', 'client_id')
-    TEST_VALUES = (1, 1, 1, 1)
+    FIELDS = ('id', 'payment_id', 'client_id')
+    TEST_VALUES = (1, 1, 1)
     WITH_CREATED = True
     WITH_UPDATED = True
 

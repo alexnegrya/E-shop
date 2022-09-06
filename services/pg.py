@@ -53,10 +53,8 @@ class PostgresDataService:
     def query(self, query: str) -> list[tuple]:
         q = query.lower()
         while True:
-            try:
-                cursor = self.conn.cursor()
-                if len(re.findall(r';(\s*[a-zA-Z]+\s+)', query)) <= 1: cursor.execute(query)
-                else: cursor.executemany(query)
+            cursor = self.conn.cursor()
+            try: cursor.execute(query)
             except InFailedSqlTransaction:
                 self.conn.rollback()
                 continue

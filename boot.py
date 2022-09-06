@@ -47,23 +47,31 @@ for table in TABLES:
         created_tables.append(table)
 logger.info(f'The following missing database tables created: {", ".join(created_tables)}' if len(created_tables) > 0 else 'All database tables exist')
 
-# Inserting test data if all tables were created now and user agrees
-# if len(created_tables) == len(TABLES):
-#     while True:
-#         os.system('clear')
-#         choice = input('\nNew database found, auto insert test data? (y/n) >>> ').lower()
-#         if choice.startswith('y'):
-#             with open('sql/scripts/insert.sql') as file: pgds.query(file.read())
-#         elif choice.startswith('n'): break
+# Inserting test data if all tables were created now
+if len(created_tables) == len(TABLES):
+    queries = []
+    with open('sql/scripts/insert.sql') as file:
+        lines = []
+        for line in file.readlines():
+            line = line.strip().replace('\n', '')
+            if line != '' and not line.startswith('--'):
+                lines.append(line)
+                if line.endswith(';'):
+                    queries.append(' '.join(lines))
+                    lines.clear()
+    [pgds.query(q) for q in queries]
 
 
 # Repositories initialization
 cm = ClientsManager(pgds)
 am = AddressesManager(pgds)
 conm = ContactsManager(pgds)
-catsm = CategoriesManager(pgds)
+catm = CategoriesManager(pgds)
 pm = ProductsManager(pgds)
 sim = StockItemsManager(pgds)
 rm = RatingsManager(pgds)
+om = OrdersManager(pgds)
+oim = OrdersItemsManager(pgds)
+paym = PaymentsManager(pgds)
 
 logger.info('Models managers intialized')

@@ -70,6 +70,19 @@ def is_user_choice_confirmed() -> bool:
         else: continue
         if c in ('y', 'n'): return c == 'y'
 
+def get_formatted_category(category, cats_manager,
+  include_parent_name=True) -> str:
+    """
+    Recursive format category and it parent categories names in one string.
+    """
+    if category.parent_category_id == None: return category.name
+    else:
+        formatted_cat = category.name
+        if include_parent_name:
+            formatted_pc = get_formatted_category(cats_manager.find(
+                id=category.parent_category_id), cats_manager)
+            formatted_cat = f'{formatted_pc} -> ' + formatted_cat
+        return formatted_cat
 
 def get_formatted_rating(rating, clients_manager) -> str:
     owner = clients_manager.find(id=rating.client_id)
@@ -130,6 +143,27 @@ def show_product_page(active_client, product, stock_items_manager,
     o = get_user_choice(*options, title=f'{product_info}\n\n{fratings}')
     if o == 0: return options[-1]
     else: return options[o - 1]
+
+
+def show_order(order, oi_manager, prods_manager, cats_manager,
+  payments_manager) -> None:
+    formatted_order = 'Your cart:\n'
+    order_items = oi_manager.find(order_id=order.id)
+    formatted_ois = []
+    total_cost = 0
+    for order_item in order_items:
+        product = prods_manager.find(id=order_item.product_id)
+        total_cost += product.price * order_item.quantity
+        category = cats_manager.find(id=product.category_id)
+        formatted_ois.append(' | '.join((product.name, f'{product.price} MDL',
+            get_formatted_category(category, cats_manager))) +
+            f' --- x{order_item.quantity}')
+    formatted_order += '\n'.join(formatted_ois)
+    payment = payments_manager.find(id=order.payment_id)
+    payment.price = total_cost
+    print(formatted_order + '\n\n' + '\n'.join((
+        f'Total cost: {payment.price} MDL', 'Payment method: ' + 
+        f'{payment.method if payment.method != None else "Not specified"}')))
 
 
 # Additional functions

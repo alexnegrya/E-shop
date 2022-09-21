@@ -1,5 +1,6 @@
 from os import system
 from math import ceil
+from .main import get_formatted_category
 
 
 class Paginator:
@@ -109,20 +110,6 @@ previous menu{" or enter number of item which one you want to choose" if numerat
         elif only_remove: []
         return separator.join(all_sections)
 
-    def __format_category(self, category, cats_manager,
-      include_parent_name=True) -> str:
-        """
-        Recursive format category and it parent categories names in one string.
-        """
-        if category.parent_category_id == None: return category.name
-        else:
-            formatted_cat = category.name
-            if include_parent_name:
-                formatted_pc = self.__format_category(cats_manager.find(
-                    id=category.parent_category_id), cats_manager)
-                formatted_cat = f'{formatted_pc} -> ' + formatted_cat
-            return formatted_cat
-
     def __get_cats_data(self, cats: list, cats_manager) -> dict:
         cats_data = {'cats': {}}
         cats_data['children'] = {c.id: tuple(cats_manager.find(
@@ -139,7 +126,7 @@ previous menu{" or enter number of item which one you want to choose" if numerat
       show_cats_parents_names=True):
         formatted_cats = []
         for cat in cats_data['cats']['all']:
-            formatted_cat = self.__format_category(cat, cats_manager,
+            formatted_cat = get_formatted_category(cat, cats_manager,
                 show_cats_parents_names)
             if cat in cats_data['cats']['with_children']: formatted_cat += ' >'
             formatted_cats.append(formatted_cat)
@@ -164,7 +151,7 @@ previous menu{" or enter number of item which one you want to choose" if numerat
         else: # For children
             cats = self._cats[self._cats_indexes[1]]
             prev_cats = self._cats[self._cats_indexes[0]]
-            subtitle = title + ' -> ' + self.__format_category(
+            subtitle = title + ' -> ' + get_formatted_category(
                 cats_manager.find(id=cats[0].parent_category_id), cats_manager)
             cats_data = self.__get_cats_data(cats, cats_manager)
             choice = self.__get_cat_choice(cats_data, cats_manager,
@@ -204,7 +191,7 @@ previous menu{" or enter number of item which one you want to choose" if numerat
         for product in products:
             prod = f'{product.name} |\
  {product.price} MDL'
-            if cats_manager != None: prod += self.__format_category(
+            if cats_manager != None: prod += get_formatted_category(
                 cats_manager.find(id=product.category_id), cats_manager)
             prods.append(prod)
         choice = self.paginate(*prods, title=title)

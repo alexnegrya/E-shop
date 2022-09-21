@@ -161,9 +161,7 @@ def show_order(order, oi_manager, prods_manager, cats_manager,
     formatted_order += '\n'.join(formatted_ois)
     payment = payments_manager.find(id=order.payment_id)
     payment.price = total_cost
-    print(formatted_order + '\n\n' + '\n'.join((
-        f'Total cost: {payment.price} MDL', 'Payment method: ' + 
-        f'{payment.method if payment.method != None else "Not specified"}')))
+    print(formatted_order + f'\nTotal cost: {payment.price} MDL')
 
 
 # Additional functions

@@ -34,9 +34,16 @@ sub_options = {
 
 # Behaviour
 
+def format_numeric_option(option: str, options_length: int) -> int: return int(
+    option[0] if len(list(filter(lambda n: n > 9, options_length))) == 0 \
+        else option)
+
+
 def get_user_choice(*options: tuple[str], title=None, frames=True, clear=True, add_line=True) -> int:
-    if type(title) != str and title != None: raise TypeError('title must be str type')
-    if any([type(o) != str for o in options]): raise TypeError('all options must be strings')
+    if type(title) != str and title != None:
+        raise TypeError('title must be str type')
+    if any([type(o) != str for o in options]):
+        raise TypeError('all options must be strings')
 
     exit_option = options[-1]
     options = {n: o for n, o in enumerate(options[:-1], 1)}
@@ -51,7 +58,8 @@ def get_user_choice(*options: tuple[str], title=None, frames=True, clear=True, a
             if frames: print('#'*30)
 
             option = input('>>> ')
-            if option.isnumeric(): option = int(option[0] if len(list(filter(lambda n: n > 9, options.keys()))) == 0 else option)
+            if option.isnumeric(): option = format_numeric_option(option,
+                len(options) - 1)
             else:
                 wait('c')
                 continue
@@ -107,7 +115,6 @@ def show_product_page(active_client, product, stock_items_manager,
     """
     Returns option (not it index) selected by user.
     """
-
     quantity = stock_items_manager.find(product_id=product.id)[0].quantity
     product_info = ' | '.join((product.name, f'{product.price} MDL',
         f'{quantity} in stock' if quantity > 0 else 'Out of stock'))
@@ -145,22 +152,29 @@ def show_product_page(active_client, product, stock_items_manager,
     else: return options[o - 1]
 
 
-def show_order(order, oi_manager, prods_manager, cats_manager,
-  payments_manager) -> None:
-    formatted_order = 'Your cart:\n'
-    order_items = oi_manager.find(order_id=order.id)
+def get_formatted_order_items(cats_manager, prods_manager, *order_items,
+  with_total_cost=False) -> tuple:
     formatted_ois = []
-    total_cost = 0
+    if with_total_cost: total_cost = 0
     for order_item in order_items:
         product = prods_manager.find(id=order_item.product_id)
-        total_cost += product.price * order_item.quantity
+        if with_total_cost: total_cost += product.price * order_item.quantity
         category = cats_manager.find(id=product.category_id)
         formatted_ois.append(' | '.join((product.name, f'{product.price} MDL',
             get_formatted_category(category, cats_manager))) +
             f' --- x{order_item.quantity}')
+    if with_total_cost: return tuple([tuple(formatted_ois), total_cost])
+    else: return tuple(formatted_ois)
+
+def show_order(order, order_items: list, prods_manager, cats_manager,
+  payments_manager) -> None:
+    formatted_order = 'Your cart:\n'
+    formatted_ois, total_cost = get_formatted_order_items(cats_manager,
+        prods_manager, *order_items, with_total_cost=True)
     formatted_order += '\n'.join(formatted_ois)
     payment = payments_manager.find(id=order.payment_id)
     payment.price = total_cost
+    payments_manager.save(payment)
     print(formatted_order + f'\nTotal cost: {payment.price} MDL')
 
 

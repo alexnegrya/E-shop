@@ -12,7 +12,7 @@ class Client(Model):
     def validate_model_field(self, name, value):
         if name == 'email':
             email_pattern = '^[a-z0-9]+[\._]?[a-z0-9]+[@]\w+[.]\w{2,3}$'
-            if not re.search(email_pattern, value):
+            if not re.match(email_pattern, value):
                 raise ValueError('wrong email format')
         elif name in ('first_name', 'last_name'):
             if type(value) != str:

@@ -1,8 +1,6 @@
--- !!! In this script, queries are written for TEST-ONLY database tables for project models !!!
-
-
 -- ! With this syntax is important to observe sequence of inserting data !
--- First needed to insert category because product column "category_id" need categories.id
+-- First needed to insert category because product column "category_id"
+-- needs categories.id
 
 
 -- Inserting addresses
@@ -11,7 +9,8 @@ INSERT INTO addresses(country, city, street, number)
 VALUES('Germany', '12679 Berlin, Carree Marzahn', 'Jan-Petersen-Straße', '18');
 -- SELA (clothing store)
 INSERT INTO addresses(country, city, street, number)
-VALUES('Россия 628611, Ханты-Мансийский АО - Югра', 'г. Нижневартовск', 'ул. Ленина', '15/1');
+VALUES('Россия 628611, Ханты-Мансийский АО - Югра',
+'г. Нижневартовск', 'ул. Ленина', '15/1');
 -- NL Collection (shoe store)
 INSERT INTO addresses(country, city, street, number)
 VALUES('Moldova', 'Chișinău 2001', 'Bulevardul Ștefan cel Mare și Sfînt', '62');
@@ -19,21 +18,21 @@ VALUES('Moldova', 'Chișinău 2001', 'Bulevardul Ștefan cel Mare și Sfînt', '
 -- Inserting shops
 INSERT INTO shops(working_hours, address_id) VALUES
 (
-    '{{00:00:00, 24:00:00, 24:00:00}, {00:00:00, 24:00:00, 24:00:00}, {00:00:00, 24:00:00, 24:00:00}, 
-    {00:00:00, 24:00:00, 24:00:00}, {00:00:00, 24:00:00, 24:00:00}, {00:00:00, 24:00:00, 24:00:00}, 
-    {00:00:00, 24:00:00, 24:00:00}}', 1
+    '{{00:00, 23:59}, {00:00, 23:59}, {00:00, 23:59},
+    {00:00, 23:59}, {00:00, 23:59}, {00:00, 23:59},
+    {00:00, 23:59}}', 1
 );
 INSERT INTO shops(working_hours, address_id) VALUES
 (
-    '{{10:00:00, 18:00:00, 08:00:00}, {10:00:00, 18:00:00, 08:00:00}, {10:00:00, 18:00:00, 08:00:00}, 
-    {10:00:00, 18:00:00, 08:00:00}, {10:00:00, 18:00:00, 08:00:00}, {10:00:00, 16:00:00, 06:00:00}, 
-    {10:00:00, 16:00:00, 06:00:00}}', 2
+    '{{10:00, 18:00}, {10:00, 18:00}, {10:00, 18:00},
+    {10:00, 18:00}, {10:00, 18:00}, {10:00, 16:00},
+    {10:00, 16:00}}', 2
 );
 INSERT INTO shops(working_hours, address_id) VALUES
 (
-    '{{08:00:00, 19:00:00, 11:00:00}, {08:00:00, 19:00:00, 11:00:00}, {08:00:00, 19:00:00, 11:00:00}, 
-    {08:00:00, 19:00:00, 11:00:00}, {08:00:00, 19:00:00, 11:00:00}, {00:00:00, 00:00:00, 00:00:00}, 
-    {00:00:00, 00:00:00, 00:00:00}}', 3
+    '{{08:00, 19:00}, {08:00, 19:00}, {08:00, 19:00},
+    {08:00, 19:00}, {08:00, 19:00}, {00:00, 00:00},
+    {00:00, 00:00}}', 3
 );
 
 -- Inserting categories
@@ -42,28 +41,41 @@ INSERT INTO categories(name, created) VALUES('Tablets', now());
 INSERT INTO categories(name, created) VALUES('Laptops', now());
 
 -- Inserting clients
-INSERT INTO clients(email, first_name, last_name, password, created, address_id) VALUES('johndoe@gmail.com', 'John', 'Doe', 'john1290', now(), 1);
-INSERT INTO clients(email, first_name, last_name, password, created, address_id) VALUES('alexeynebo@mail.ru', 'Алексей', 'Небесный', 'alexeyn_120', now(), 2);
-INSERT INTO clients(email, first_name, last_name, password, created, address_id) VALUES('ionut931@outlook.com', 'Ion', 'Popa', 'IoNpSocial', now(), 3);
+INSERT INTO clients(email, first_name, last_name, password, created, address_id)
+VALUES('johndoe@gmail.com', 'John', 'Doe', 'john1290', now(), 1);
+INSERT INTO clients(email, first_name, last_name, password, created, address_id)
+VALUES('alexeynebo@mail.ru', 'Алексей', 'Небесный', 'alexeyn_120', now(), 2);
+INSERT INTO clients(email, first_name, last_name, password, created, address_id)
+VALUES('ionut931@outlook.com', 'Ion', 'Popa', 'IoNpSocial', now(), 3);
 
 -- Inserting contacts
-INSERT INTO contacts(type, value, client_id) VALUES('Phone', '30-2045678956', 1);
-INSERT INTO contacts(type, value, client_id) VALUES('Telegram', '@alexeynebo', 2);
-INSERT INTO contacts(type, value, client_id) VALUES('Gmail', 'ionpopa@gmail.com', 3);
+INSERT INTO contacts(type, value, client_id) VALUES('Phone', '30-2045678956',
+1);
+INSERT INTO contacts(type, value, client_id) VALUES('Telegram', '@alexeynebo',
+2);
+INSERT INTO contacts(type, value, client_id) VALUES('Gmail', 'ionpopa@gmail.com',
+3);
 
 -- Inserting services
 INSERT INTO services(name, description, price)
 VALUES('Express delivery', 'Your products will be delivered in 1-3 days.', 100);
 INSERT INTO services(name, description, price)
-VALUES('Delivery to the door', 'Your products will be delivered to the door of your home.', 50);
+VALUES('Delivery to the door',
+'Your products will be delivered to the door of your home.', 50);
 
 -- Inserting products
-INSERT INTO products(name, created, price, category_id) VALUES('iPhone XI', now(), 1000, 1);
-INSERT INTO products(name, created, price, category_id) VALUES('iPhone XII', now(), 1500, 1);
-INSERT INTO products(name, created, price, category_id) VALUES('Lenovo Pad Pro', now(), 1700, 2);
-INSERT INTO products(name, created, price, category_id) VALUES('Lenovo AIII', now(), 15000, 2);
-INSERT INTO products(name, created, price, category_id) VALUES('Acer Gaming Pro X', now(), 60000, 3);
-INSERT INTO products(name, created, price, category_id) VALUES('Asus Ultimate', now(), 2000, 3);
+INSERT INTO products(name, created, price, category_id)
+VALUES('iPhone XI', now(), 1000, 1);
+INSERT INTO products(name, created, price, category_id)
+VALUES('iPhone XII', now(), 1500, 1);
+INSERT INTO products(name, created, price, category_id)
+VALUES('Lenovo Pad Pro', now(), 1700, 2);
+INSERT INTO products(name, created, price, category_id)
+VALUES('Lenovo AIII', now(), 15000, 2);
+INSERT INTO products(name, created, price, category_id)
+VALUES('Acer Gaming Pro X', now(), 60000, 3);
+INSERT INTO products(name, created, price, category_id)
+VALUES('Asus Ultimate', now(), 2000, 3);
 
 -- Inserting stock items
 INSERT INTO stock_items(quantity, product_id) VALUES(26, 1);
@@ -91,7 +103,8 @@ It has a big and light screen, good sound and quality camera for this price.
 Who have small incomes and need a tablet, recommend this tablet.', 4, 3);
 INSERT INTO ratings(stars, review, product_id, client_id)
 VALUES(7, 'Laptop is very good, 
-but it was delivered not on time and packed poorly, which is why it was scratched.', 5, 3);
+but it was delivered not on time and packed poorly, 
+which is why it was scratched.', 5, 3);
 
 -- Inserting payments
 INSERT INTO payments(method, price) VALUES('PayPal', 0);

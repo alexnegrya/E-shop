@@ -15,9 +15,6 @@ logger.setLevel(logging.NOTSET)
 _paginator = Paginator()
 
 
-def _get_data_choice(msg: str, prev_menu_name: str): return get_user_choice('Re-enter data', f'Back to {prev_menu_name} menu', title=msg)
-
-
 def _is_user_choose_continue(exception: Exception, model_name: str, prev_menu_name: str):
     wait('c')
     if not isinstance(exception, UniqueViolation): msg = f'{str(exception)[0].upper() + str(exception)[1:]}'
@@ -27,7 +24,7 @@ def _is_user_choose_continue(exception: Exception, model_name: str, prev_menu_na
             if char != ')': field += char
             else: break
         msg = f'{model_name} with this {field} already exists'
-    return _get_data_choice(f'{msg}...', prev_menu_name) == 1
+    return get_data_choice(f'{msg}...', prev_menu_name) == 1
 
 
 def _get_and_test_models_attrs(model, prev_menu_name: str, *attrs: tuple[str],
@@ -77,11 +74,11 @@ def _get_and_test_models_attrs(model, prev_menu_name: str, *attrs: tuple[str],
                     else: raise e
                 confirm = getpass(q + ' again: ')
                 if value != confirm:
-                    return _get_data_choice('Passwords not match...',
+                    return get_data_choice('Passwords not match...',
                         prev_menu_name) == 1
             if attrs_to_int != None and attr in attrs_to_int:
                 try: value = int(value)
-                except ValueError: return _get_data_choice(
+                except ValueError: return get_data_choice(
                     f'{attr_name[0].upper() + attr_name[1:]} must be a ' +
                     'number...', 'start') == 1
             try:
@@ -112,7 +109,7 @@ def _login():
                     client = cm.find(email=entered_data[Client]['email'])[0]
                     email_entered = True
                 except IndexError:
-                    if _get_data_choice(
+                    if get_data_choice(
                         'User with this email was not found, please register\
  first...', 'start') == 1: continue
                     else: break
@@ -126,7 +123,7 @@ def _login():
                 active_client = client
                 break
             else:
-                if _get_data_choice('Wrong password...',
+                if get_data_choice('Wrong password...',
                     'start') == 1: continue
                 else: break
         except Exception as e:
@@ -206,7 +203,7 @@ def _show_home_screen(custom_title=None):
             if active_client != None: break
         elif choice == 0:
             wait('c')
-            raise SystemExit(exit_msg)
+            raise SystemExit(EXIT_MSG)
 
 
 _show_home_screen()
@@ -220,7 +217,8 @@ while not exit:
 
     if choice == 1: # Account
         title = _add_sections_to_title(title, 'Account')
-        while True:
+        to_main_menu = False
+        while not to_main_menu:
             wait('c')
 
             try: address = am.find(id=active_client.address_id)
@@ -232,11 +230,17 @@ while not exit:
                 'Last name': active_client.last_name,
                 'Password': format_password(active_client.password),
             }
-            attrs_dict.update({'Country': address.country, 'City': address.city, 'Street': address.street, 'Street number': address.number} \
+            attrs_dict.update({'Country': address.country,
+                'City': address.city,
+                'Street': address.street,
+                'Street number': address.number} \
                 if address != None else {'Address': 'Not specified'})
             contacts = conm.find(client_id=active_client.id)
-            attrs_dict.update({con.type: con.value for con in contacts} if len(contacts) > 0 else {'Contacts': 'Not specified'})
-            o = get_user_choice(*sub_options['account'], title=title + '\n' + json.dumps(attrs_dict, indent=0).replace('"', '').strip(r'{}'), add_line=False)
+            attrs_dict.update({con.type: con.value for con in contacts} if \
+                len(contacts) > 0 else {'Contacts': 'Not specified'})
+            o = get_user_choice(*sub_options['account'], title=title + '\n' + \
+                json.dumps(attrs_dict, indent=0, ensure_ascii=False) \
+                .replace('"', '').strip(r'{}'), add_line=False)
 
             if o == 1: # change user data
                 while True:
@@ -252,16 +256,21 @@ while not exit:
                         'Last name',
                         'Password'
                     ]
-                    options += ['Add address'] if address == None else ['Country', 'City', 'Street', 'Street number', 'Delete address']
+                    options += ['Add address'] if address == None else [
+                        'Country', 'City', 'Street', 'Street number',
+                        'Delete address']
                     start_contacts_option = len(options) + 1
-                    if len(contacts) > 0: options += [con.type for con in contacts]
+                    if len(contacts) > 0: options += [
+                        con.type for con in contacts]
                     options += ['Add contact', 'Back to account menu']
 
-                    section_title = _add_sections_to_title(title, 'Change data')
+                    section_title = _add_sections_to_title(title,
+                        'Change data')
                     c = get_user_choice(*options, title=section_title)
                     wait('c')
                     try:
-                        section_title = _add_sections_to_title(section_title, options[c - 1])
+                        section_title = _add_sections_to_title(section_title,
+                            options[c - 1])
                     except KeyError:
                         continue
 
@@ -271,7 +280,10 @@ while not exit:
 
                         if c == 1: # change all data (user + address)
                             list_for_update = []
-                            cstatus = _get_and_test_models_attrs(Client, 'change data', 'email', 'first_name', 'last_name', 'password', old_model=active_client)
+                            cstatus = _get_and_test_models_attrs(Client,
+                                'change data', 'email', 'first_name',
+                                'last_name', 'password',
+                                old_model=active_client)
                             if type(cstatus) == bool:
                                 if cstatus: continue
                                 break
@@ -346,7 +358,9 @@ while not exit:
                                     if is_user_choice_confirmed(): conm.delete(contact)
                         break
                     break
-            elif o == 2: _show_home_screen(title)
+            elif o == 2:
+                _show_home_screen(title)
+                to_main_menu = True
             elif o == 3 and is_user_choice_confirmed():
                 cm.delete(active_client)
                 active_client = None
@@ -378,6 +392,7 @@ while not exit:
                                     wait('t', 'Please enter a number')
                                     continue
 
+                                # Get or create order, order item (or update it)
                                 orders = om.find(client_id=active_client.id)
                                 if len(orders) == 0:
                                     payment = paym.save(Payment(price=0,
@@ -463,17 +478,9 @@ while not exit:
             else: show_all_categories = False
 
     elif choice == 3: # Cart
-        wait('a', not_ready_msg)
+        wait('a', NOT_READY_MSG)
         continue
 
-        if active_client.order == None:
-            wait('c')
-            print('Cart is empty')
-            wait('t')
-        else:
-            wait('c')
-            print(active_client.order)
-            wait('t')
     elif choice == 0: # Exit
         wait('c')
-        raise SystemExit(exit_msg)
+        raise SystemExit(EXIT_MSG)

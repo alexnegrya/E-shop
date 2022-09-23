@@ -1,20 +1,24 @@
 from os import system
 from textwrap import indent
+from uuid import uuid4
+from datetime import datetime, timedelta
+import re
 
 
 # Global config
 active_client = None
 exit = False
 entered_data = {}
-exit_msg = 'Thank you for using this app!'
-not_ready_msg = 'This functional coming soon, please wait'
+EXIT_MSG = 'Thank you for using this app!'
+NOT_READY_MSG = 'This functional coming soon, please wait'
+PAYMENT_METHODS = ('In cash', 'By card', 'With PayPal')
 
 
 # Options (described which models and for which operations will be used in each option)
 main_options = (
     'Account', # Client CRUD, Address CRUD, Contact CRUD
     'Catalog', # Category R, Product page - Product R, StockItem R, Rating CRU, Money CRU, Order CU, OrderItem CU
-    'Cart (coming soon)', # Order RUD, OrderItem RUD, Service R, Shop R, Payment CRUD and other models related to this models
+    'Cart (cooming soon)', # Order RUD, OrderItem RUD, Service R, Shop R, Payment CRUD and other models related to this models
     'Exit'
 )
 sub_options = {
@@ -32,14 +36,30 @@ sub_options = {
 }
 
 
+# Auxiliary functions
+
+def wait(mode: str, msg='Press [Enter] to continue'):
+    MODES = ('c', 't', 'a')
+    if type(mode) != str: raise TypeError('mode must be a string')
+    if mode not in MODES: raise ValueError('unknown mode')
+
+    if mode == 'c': system('clear')
+    elif mode in ('t', 'a'): input(f'\n{msg}... ')
+    if mode == 'a': system('clear')
+
+
+def format_password(password: str):
+    return password[0] + '*' * len(password[1:-1]) + password[-1]
+
+
 # Behaviour
 
 def format_numeric_option(option: str, options_length: int) -> int: return int(
-    option[0] if len(list(filter(lambda n: n > 9, options_length))) == 0 \
+    option[0] if len(list(filter(lambda n: n > 9, range(options_length)))) == 0
         else option)
 
-
-def get_user_choice(*options: tuple[str], title=None, frames=True, clear=True, add_line=True) -> int:
+def get_user_choice(*options: tuple[str], title=None, frames=True, clear=True,
+  add_line=True) -> int:
     if type(title) != str and title != None:
         raise TypeError('title must be str type')
     if any([type(o) != str for o in options]):
@@ -68,6 +88,9 @@ def get_user_choice(*options: tuple[str], title=None, frames=True, clear=True, a
                 wait('c')
                 continue
         except ValueError: continue
+
+def get_data_choice(msg: str, prev_menu_name: str): return get_user_choice(
+    'Re-enter data', f'Back to {prev_menu_name} menu', title=msg)
 
 
 def is_user_choice_confirmed() -> bool:
@@ -166,29 +189,199 @@ def get_formatted_order_items(cats_manager, prods_manager, *order_items,
     if with_total_cost: return tuple([tuple(formatted_ois), total_cost])
     else: return tuple(formatted_ois)
 
-def show_order(order, order_items: list, prods_manager, cats_manager,
-  payments_manager) -> None:
-    formatted_order = 'Your cart:\n'
-    formatted_ois, total_cost = get_formatted_order_items(cats_manager,
-        prods_manager, *order_items, with_total_cost=True)
-    formatted_order += '\n'.join(formatted_ois)
+
+def get_cart_string(formatted_ois: tuple) -> str:
+    return 'Your cart:' + '\n' + '\n'.join(formatted_ois)
+
+def get_order_payment(order, payments_manager, new_total_cost=None):
     payment = payments_manager.find(id=order.payment_id)
-    payment.price = total_cost
-    payments_manager.save(payment)
+    if new_total_cost != None:
+        payment.price = new_total_cost
+        payments_manager.save(payment)
+    return payment
+
+def show_order(order, formatted_ois: tuple, total_cost: int,
+  payments_manager) -> None:
+    formatted_order = get_cart_string(formatted_ois)
+    payment = get_order_payment(order, payments_manager, total_cost)
     print(formatted_order + f'\nTotal cost: {payment.price} MDL')
 
 
-# Additional functions
+def get_days_names() -> tuple[str]: return tuple(
+    [datetime(2000, 1, day).strftime('%A') for day in range(3, 8)] +
+    [datetime(2000, 1, day).strftime('%A') for day in range(1, 3)])
 
-def wait(mode: str, msg='Press [Enter] to continue'):
-    MODES = ('c', 't', 'a')
-    if type(mode) != str: raise TypeError('mode must be a string')
-    if mode not in MODES: raise ValueError('unknown mode')
+def get_order_completion_msg() -> str: return 'Your order is successfully ' + \
+    'completed! You will receive an email with its status within an hour.' + \
+    f' Please save your order UUID, it will be useful later: {uuid4()}.'
 
-    if mode == 'c': system('clear')
-    elif mode in ('t', 'a'): input(f'\n{msg}... ')
-    if mode == 'a': system('clear')
+def _is_user_choose_continue(msg: str, prev_menu: str) -> bool:
+    msg = msg[0].upper() + msg[1:] + '...'
+    choice = get_data_choice(msg, prev_menu)
+    return not choice == 0
 
+def raise_validation_error(msg: str, prev_menu: str): raise ValueError('continue' \
+    if _is_user_choose_continue(msg, prev_menu) else 'break')
 
-def format_password(password: str):
-    return password[0] + '*' * len(password[1:-1]) + password[-1]
+def get_validated_card_data(data_type: str, prev_menu: str):
+    standart_err_msg = f'wrong {data_type}'
+    data = input(f'Enter {data_type} >>> ')
+    if data_type == 'card holder name':
+        spl = data.split(' ')
+        err_substr = f'{data_type} and surname must'
+        if len(spl) != 2: raise_validation_error(
+            f'{err_substr} be separated by space', prev_menu)
+        elif any([not s[0].isupper() for s in spl]): raise_validation_error(
+            f'{err_substr} start with a capital letter', prev_menu)
+    elif data_type == 'card number':
+        if any([not re.match(p, data) for p in (
+          r"[456]\d{3}(-?\d{4}){3}$", r"((\d)-?(?!(-?\2){3})){16}")]):
+            raise_validation_error(standart_err_msg, prev_menu)
+    elif data_type == 'expiry date':
+        try:
+            spl = [int(s) for s in data.split('/')]
+            if len(spl) != 2: spl = [int(s) for s in data.split('-')]
+        except ValueError: raise_validation_error(standart_err_msg, prev_menu)
+        if spl[1] < 1 or spl[1] > 99: raise_validation_error(
+            'wrong year', prev_menu)
+        try: datetime(2000 + spl[1], spl[0], 1)
+        except ValueError as e: raise_validation_error(str(e), prev_menu)
+        now = datetime.now()
+        def raise_error(date_value: str): return raise_validation_error(
+            f'card expired, current {date_value} greater than {date_value} ' +
+            f'in {data_type}', prev_menu)
+        if spl[1] > now.year: raise_error('year')
+        elif spl[0] > now.month: raise_error('month')
+    elif data_type == 'security code':
+        if not data.isnumeric() or len(data) not in (3, 4):
+            raise_validation_error(standart_err_msg, prev_menu)
+    return data
+
+def is_user_choose_payment_method(title: str, prev_menu: str) -> bool:
+    while True:
+        wait('c')
+        choice = get_user_choice(*list(PAYMENT_METHODS) +
+            [f'Back to {prev_menu} menu'], title=title +
+            '\n\nPlease select one of the available payment methods.')
+        is_selected = True
+        if choice == 0: return False # Go back
+        elif choice == 1: return True # In cash
+        elif choice == 2: # By card
+            data_types = ['card holder name', 'card number', 'expiry date',
+                'security code']
+            while is_selected:
+                wait('c')
+                data = []
+                try:
+                    for data_type in data_types.copy():
+                        data.append(get_validated_card_data(
+                            data_type, prev_menu))
+                        data_types.remove(data_type)
+                except ValueError as e:
+                    if str(e) == 'continue': continue
+                    elif str(e) == 'break': is_selected = False
+                break
+        elif choice == 3: # With PayPal
+            while is_selected:
+                wait('c')
+                email = input('Please enter your PayPal email >>> ')
+                if not re.match('^[a-z0-9]+[\._]?[a-z0-9]+[@]\w+[.]\w{2,3}$',
+                  email):
+                    if _is_user_choose_continue('wrong PayPal email',
+                        prev_menu): continue
+                    else: is_selected = False
+                break
+        return is_selected
+
+def format_services(*services, check_marks_dict=None) -> list:
+    formatted_services = []
+    for service in services:
+        formatted_service = f'{service.name} | {service.price} MDL'
+        if check_marks_dict != None:
+            check_mark = f'{"☑" if check_marks_dict[service.id] else "☐"}'
+            formatted_service = f'{check_mark} {formatted_service}'
+        formatted_services.append(formatted_service)
+    return formatted_services
+
+def format_shops(addresses_manager, *shops) -> list:
+    formatted_shops = []
+    days = get_days_names()
+    for shop in shops:
+        address = addresses_manager.find(id=shop.address_id)
+        formatted_shop = f'♦ {address.country}; {address.city}; {address.street} ' \
+            + address.number
+        working_time = []
+        for i in range(len(shop.working_hours)):
+            wt = shop.working_hours[i]
+            t1, t2 = wt[0], wt[1]
+            h1, m1 = t1.split(':')
+            h2, m2 = t2.split(':')
+            if all([time == '00:00' for time in wt]):
+                schedule = 'Non-working day'
+            elif wt == ['00:00', '23:59']:
+                schedule = 'Works all day'
+            else:
+                summary = datetime(2000, 1, 1, int(h2) - int(h1), int(m1)) + \
+                    timedelta(minutes=int(m2))
+                schedule = "-".join(shop.working_hours[i]) + \
+                    f' (works {summary.hour} hour(s) and ' + \
+                    f'{summary.minute} minute(s))'
+            working_time.append(f'{days[i]}: {schedule}')
+        formatted_shops.append(formatted_shop + '\n' + '\n'.join(working_time))
+    return formatted_shops
+
+def complete_order(orders_manager, addresses_manager, payments_manager, order,
+  formatted_ois: tuple, shops: list, services: list) -> bool:
+    payment = get_order_payment(order, payments_manager)
+    title = f'{get_cart_string(formatted_ois)}\nTotal cost:' + \
+        f' {payment.price} MDL'
+    continue_cycle = False
+
+    while True:
+        wait('c')
+        prev_menu = 'cart'
+        if not is_user_choose_payment_method(title, prev_menu): return False
+        choice = get_user_choice('Self-delivery', 'Delivery',
+            f'Back to {prev_menu} menu',
+            title=title + '\n\nPlease select delivery method.')
+        if choice == 0: return False
+        else: wait('c')
+
+        if choice == 1: print(get_order_completion_msg(), # Self-delivery
+            'Now you can view our shops addresses and working hours:\n\n' +
+            "\n\n".join(format_shops(addresses_manager, *shops)))
+
+        elif choice == 2: # Delivery
+            check_marks_dict = {id_: False for id_ in [
+                s.id for s in services]}
+            while True:
+                continue_cycle = False
+                services_str = 'Services:\n' + '\n'.join(format_services(
+                    *services, check_marks_dict=check_marks_dict))
+                back_option = 'Back to payment method selection menu'
+                choice = get_user_choice('Add/Remove service', 'Complete order',
+                    back_option, title=services_str)
+                if choice == 0: continue_cycle = True # Delivery selection
+                elif choice == 2:
+                    wait('c')
+                    print(get_order_completion_msg()) # Complete
+                elif choice == 1: # Add/Remove service
+                    c = get_user_choice(*format_services(*services) + 
+                        [back_option], title='Select service:')
+                    if c == 0: break
+                    is_selected = check_marks_dict[services[c - 1].id]
+                    check_marks_dict[services[c - 1].id] = not is_selected
+                    continue
+                break
+            for service in services:
+                if check_marks_dict[service.id]: payment.price += service.price
+            payments_manager.save(payment)
+
+        if continue_cycle: continue
+        else: break
+
+    # ----> There may be integrated real payment <----
+
+    orders_manager.delete(order)
+    wait('a', 'Press [Enter] to return to the main menu')
+    return True

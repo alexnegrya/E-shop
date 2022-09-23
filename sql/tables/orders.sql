@@ -10,7 +10,7 @@ CREATE TABLE orders
     CONSTRAINT orders_payment_fkey
         FOREIGN KEY (payment_id)
             REFERENCES payments(id)
-                ON DELETE RESTRICT,
+                ON DELETE CASCADE,
     CONSTRAINT orders_client_fkey
         FOREIGN KEY (client_id)
             REFERENCES clients(id)

@@ -73,5 +73,7 @@ rm = RatingsManager(pgds)
 om = OrdersManager(pgds)
 oim = OrdersItemsManager(pgds)
 paym = PaymentsManager(pgds)
+shm = ShopsManager(pgds)
+sem = ServicesManager(pgds)
 
 logger.info('Models managers intialized')

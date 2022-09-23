@@ -6,7 +6,7 @@ class Service(Model):
     FIELDS = ('id', 'name', 'description', 'price')
     TEST_VALUES = (1, 'Test', 'Test', 1)
 
-    def __setattr__(self, name, value):
+    def validate_model_field(self, name: str, value):
         if name in ('name', 'description'):
             if type(value) != str:
                 raise TypeError('value must be a string')

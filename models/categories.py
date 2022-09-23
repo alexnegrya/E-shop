@@ -33,7 +33,6 @@ class Category(Model):
                         raise NameError('the name must not contain integer values')
                     except ValueError:
                         pass
-                object.__setattr__(self, name, value)
         elif name == 'parent_category_id':
             if type(value) != int and value != None: raise TypeError('wrong parent Category id')
         elif name in ('created', 'updated'):

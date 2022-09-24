@@ -26,9 +26,10 @@ class Paginator:
         object.__setattr__(self, name, value)
 
     def paginate(self, *objs, title=None, numerate=True) -> int | None:
-        HELP = f'''Enter "<" or ">" to go to the previous or next page, "p"
-to go the specified page{" ," if numerate else " or"} "back" to return to the 
-previous menu{" or enter number of item which one you want to choose" if numerate else ""}\
+        back_info = '' if numerate else ', "back" to return to the previous menu'
+        HELP = f'''Enter "<" or ">" to go to the previous or next page, "p" \
+to go the specified page{back_info}\
+{" or enter number of item which one you want to choose" if numerate else ""}\
 .'''
         l = len(objs)
         if l == 0: raise ValueError('at least one object must be passed')
@@ -46,8 +47,10 @@ previous menu{" or enter number of item which one you want to choose" if numerat
             if title != None:
                 if type(title) == str: print(f'{title}\n')
                 else: raise TypeError('title must be str type')
-            if numerate: [print(f'{n}.', obj) \
-                for n, obj in enumerate(objs[start_i:end_i], 1)]
+            if numerate:
+                [print(f'{n}.', obj) for n, obj in enumerate(
+                    objs[start_i:end_i], 1)]
+                print('0.', 'Back')
             else: [print(obj) for obj in objs[start_i:end_i]]
 
             # Print pages
@@ -80,10 +83,10 @@ previous menu{" or enter number of item which one you want to choose" if numerat
                 system('clear')
                 print(HELP)
                 input('\nPress [Enter] to continue... ')
-            elif s == 'back': break
+            elif not numerate and s == 'back': break
             elif numerate and s.isnumeric(): 
                 n = int(s)
-                if n == 0: continue
+                if n == 0: break
                 else: return n if n <= l else l
 
     def __get_list_exclude_other(self, main_list: list,
@@ -91,24 +94,6 @@ previous menu{" or enter number of item which one you want to choose" if numerat
         l = main_list.copy()
         [l.remove(obj) for obj in other_list]
         return l
-
-    def __get_title_with_changed_sections(self, title: str,
-      *sections: tuple[str], separator=' -> ',
-      only_add=False, only_remove=False) -> str:
-        """
-        Add or remove every section to/from title depending on it presence in
-        title. Returns changed title.
-        """
-        all_sections = title.split(separator)
-        if (only_add, only_remove) == (False, False):
-            for section in sections:
-                all_sections.remove(section) if section in all_sections \
-                    else all_sections.append(section)
-        elif only_add and only_remove: raise ValueError(
-            'only one of only_add and only_remove args can be True')
-        elif only_add: [all_sections.append(s) for s in sections]
-        elif only_remove: []
-        return separator.join(all_sections)
 
     def __get_cats_data(self, cats: list, cats_manager) -> dict:
         cats_data = {'cats': {}}
@@ -179,20 +164,17 @@ previous menu{" or enter number of item which one you want to choose" if numerat
                 return cats_data['cats']['all'][choice - 1]
         else: del self._cats, self._cats_indexes
         
-    def paginate_products(self, title: str, prods_manager, *products,
-      cats_manager=None):
+    def paginate_products(self, title: str, category, cats_manager,
+      prods_manager, *products):
         """
-        Add products categories names to their title if `cats_manager` argument
-        received. Returns product selected by user or `None` if user wants come
-        back to the previous menu.
+        Returns product selected by user or `None` if user wants come back to
+        the previous menu.
         """
         products = prods_manager.sort(*products)
         prods = []
         for product in products:
-            prod = f'{product.name} |\
- {product.price} MDL'
-            if cats_manager != None: prod += get_formatted_category(
-                cats_manager.find(id=product.category_id), cats_manager)
+            prod = f'{product.name} | {product.price} MDL'
             prods.append(prod)
-        choice = self.paginate(*prods, title=title)
+        choice = self.paginate(*prods, title=title + ' -> ' +
+            get_formatted_category(category, cats_manager))
         if type(choice) == int: return products[choice - 1]

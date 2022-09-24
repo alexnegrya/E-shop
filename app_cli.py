@@ -1,3 +1,4 @@
+from turtle import back
 from cli.main import *
 from cli.paginators import Paginator
 import boot
@@ -15,9 +16,11 @@ logger.setLevel(logging.NOTSET)
 _paginator = Paginator()
 
 
-def _is_user_choose_continue(exception: Exception, model_name: str, prev_menu_name: str):
+def _is_user_choose_continue(exception: Exception, model_name: str,
+  prev_menu_name: str):
     wait('c')
-    if not isinstance(exception, UniqueViolation): msg = f'{str(exception)[0].upper() + str(exception)[1:]}'
+    if not isinstance(exception, UniqueViolation):
+        msg = f'{str(exception)[0].upper() + str(exception)[1:]}'
     else:
         field = ''
         for char in str(exception)[str(exception).find('(') + 1:]:
@@ -89,7 +92,22 @@ def _get_and_test_models_attrs(model, prev_menu_name: str, *attrs: tuple[str],
                 else: raise e
 
 
-def _add_sections_to_title(old_title: str, *sections: tuple[str]) -> str: return old_title + ' -> ' + ' -> '.join(sections)
+def _add_sections_to_title(title: str, *sections: tuple[str],
+  separator=' -> ', only_add=False, only_remove=False) -> str:
+    """
+    Add or remove every section to/from title depending on it presence in
+    title. Returns changed title.
+    """
+    all_sections = title.split(separator)
+    if (only_add, only_remove) == (False, False):
+        for section in sections:
+            all_sections.remove(section) if section in all_sections \
+                else all_sections.append(section)
+    elif only_add and only_remove: raise ValueError(
+        'only one of only_add and only_remove args can be True')
+    elif only_add: [all_sections.append(s) for s in sections]
+    elif only_remove: []
+    return separator.join(all_sections)
 
 
 def _login():
@@ -375,8 +393,8 @@ while not exit:
             if category != None:
                 show_this_cat_prods = True
                 while show_this_cat_prods:
-                    product = _paginator.paginate_products(title, pm, *pm.find(
-                        category_id=category.id))
+                    product = _paginator.paginate_products(title, category,
+                        catm, pm, *pm.find(category_id=category.id))
                     if product != None:
                         show_prod_page = True
                         while show_prod_page:
@@ -384,43 +402,70 @@ while not exit:
                                 sim, rm, cm)
 
                             if o == 'Add to cart':
-                                wait('c')
-                                try:
-                                    quantity = int(input(
-                                        'How much do you want to add? '))
-                                except ValueError:
-                                    wait('t', 'Please enter a number')
+                                in_stock = sim.find(product_id=product.id)[
+                                    0].quantity
+                                if in_stock == 0:
+                                    wait('f', 'This product is out of stock, '
+                                        'please more products appear (press '
+                                        '[Enter] to back to product page)')
                                     continue
+                                while True:
+                                    wait('c')
+                                    try:
+                                        quantity = int(input(
+                                            'How much do you want to add? '))
+                                    except ValueError:
+                                        wait('t', 'Please enter a number')
+                                        continue
 
-                                # Get or create order, order item (or update it)
-                                orders = om.find(client_id=active_client.id)
-                                if len(orders) == 0:
-                                    payment = paym.save(Payment(price=0,
-                                        method=None))[0]
-                                    order = om.save(Order(
-                                        payment_id=payment.id,
-                                        client_id=active_client.id))[0]
-                                    oim.save(OrderItem(quantity=quantity,
-                                        product_id=product.id,
-                                        order_id=order.id))
-                                else:
-                                    order = om.find(
-                                        client_id=active_client.id)[0]
-                                    order_items = oim.find(
-                                        product_id=product.id,
-                                        order_id=order.id)
-                                    if len(order_items) == 0:
-                                        order_item = OrderItem(
-                                            quantity=quantity,
-                                            product_id=product.id,
-                                            order_id=order.id)
+                                    # Get or create order, order item (or update it)
+                                    orders = om.find(client_id=active_client.id)
+                                    try:
+                                        if len(orders) == 0:
+                                            payment = paym.save(Payment(price=0,
+                                                method=None))[0]
+                                            order = om.save(Order(
+                                                payment_id=payment.id,
+                                                client_id=active_client.id))[0]
+                                            order_item = OrderItem(
+                                                quantity=quantity,
+                                                product_id=product.id,
+                                                order_id=order.id)
+                                        else:
+                                            order = om.find(
+                                                client_id=active_client.id)[0]
+                                            order_items = oim.find(
+                                                product_id=product.id,
+                                                order_id=order.id)
+                                            if len(order_items) == 0:
+                                                order_item = OrderItem(
+                                                    quantity=quantity,
+                                                    product_id=product.id,
+                                                    order_id=order.id)
+                                            else:
+                                                order_item = order_items[0]
+                                                order_item.quantity += quantity
+                                    except ValueError as e:
+                                        if 'quantity' in str(e):
+                                            if _is_user_choose_continue(
+                                              e, 'OrderItem', 'product page'):
+                                                continue
+                                            else: break
+                                        else: raise e
+                                    if quantity > in_stock:
+                                        if get_data_choice(
+                                            'There is no such quantity in stock'
+                                            ', please add less or wait until '
+                                            'more products appear...',
+                                            'product page') == 1: continue
+                                        else: break
                                     else:
-                                        order_item = order_items[0]
-                                        order_item.quantity += quantity
-                                    oim.save(order_item)
-                                input('\nAdded to cart successfully, current' +
-                                    ' product count in your cart: ' +
-                                    str(order_item.quantity) + ' ')
+                                        oim.save(order_item)
+                                        input('\nAdded to cart successfully,' + \
+                                            ' current product count in your ' + \
+                                            'cart: ' + str(order_item.quantity) + \
+                                            ' ')
+                                        break
 
                             elif o == 'View all ratings':
                                 all_ratings = rm.sort(*rm.find(
@@ -471,6 +516,11 @@ while not exit:
                                         'review']
                                     rm.save(rating)
                                     break
+                            
+                            elif o == 'Delete my rating' and \
+                              is_user_choice_confirmed(): rm.delete(rm.find(
+                                product_id=product.id,
+                                client_id=active_client.id)[0])
 
                             elif o == 'Back to this category products':
                                 show_prod_page = False
@@ -478,8 +528,64 @@ while not exit:
             else: show_all_categories = False
 
     elif choice == 3: # Cart
-        wait('a', NOT_READY_MSG)
-        continue
+        back_to_main_menu = False
+        while not back_to_main_menu:
+            try:
+                order = om.find(client_id=active_client.id)[0]
+            except IndexError:
+                wait('c')
+                wait('t', 'There`s nothing here yet, please use the "Catalog" '
+                'option to add products, press [Enter] to return to the main '
+                'menu')
+                break
+            title = _add_sections_to_title(title, 'Cart')
+            order_items = oim.find(order_id=order.id)
+            back_to_cart_menu = False
+            while not back_to_cart_menu:
+                formatted_ois, total_cost = get_formatted_order_items(catm, pm,
+                    *order_items, with_total_cost=True)
+                formatted_order = format_order(order, formatted_ois, total_cost,
+                    paym)
+                o = get_user_choice(*sub_options['cart'], title=title +
+                    '\n\n' + formatted_order)
+                
+                if o == 1: # Complete order
+                    back_to_cart_menu = complete_order(om, am, paym, sim,
+                        order, order_items, formatted_ois, shm.all(), sem.all())
+                    back_to_main_menu = back_to_cart_menu
+                
+                elif o == 2: # Change products count
+                    option = _paginator.paginate(*formatted_ois, title=title + 
+                        '\n\nPlease select product.')
+                    if option == None: continue
+                    order_item = order_items[option - 1]  
+                    while True:
+                        wait('c')
+                        print('If you want to remove product from cart,',
+                            'you can enter 0.')
+                        entered_data.clear()
+                        status = _get_and_test_models_attrs(OrderItem, 'cart',
+                            'quantity', old_model=order_item,
+                            attrs_to_int=('quantity',))
+                        if type(status) == bool:
+                            if status: continue
+                            else: break
+                        break
+                    quantity = entered_data[OrderItem]['quantity']
+                    if quantity == 0:
+                        oim.delete(order_item)
+                        order_items.pop(option - 1)
+                    else:
+                        order_item.quantity = quantity
+                        oim.save(order_item)
+                        order_items[option - 1] = order_item
+
+                elif o == 3: # Clear cart
+                    om.delete(order)
+                    back_to_cart_menu = True
+                
+                elif o == 0: # Back to main menu
+                    back_to_cart_menu, back_to_main_menu = True, True
 
     elif choice == 0: # Exit
         wait('c')

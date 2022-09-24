@@ -18,7 +18,7 @@ PAYMENT_METHODS = ('In cash', 'By card', 'With PayPal')
 main_options = (
     'Account', # Client CRUD, Address CRUD, Contact CRUD
     'Catalog', # Category R, Product page - Product R, StockItem R, Rating CRU, Money CRU, Order CU, OrderItem CU
-    'Cart (cooming soon)', # Order RUD, OrderItem RUD, Service R, Shop R, Payment CRUD and other models related to this models
+    'Cart', # Order RUD, OrderItem RUD, Service R, Shop R, Payment CRUD and other models related to this models
     'Exit'
 )
 sub_options = {
@@ -32,6 +32,12 @@ sub_options = {
         'All products', # Sorting by updated and created DESC
         'Categories', # 1 ... n - categories names, 0 - exit to catalog menu
         'Back to main menu'
+    ),
+    'cart': (
+        'Complete my order',
+        'Change products count',
+        'Clear cart',
+        'Back to main menu'
     )
 }
 
@@ -39,12 +45,13 @@ sub_options = {
 # Auxiliary functions
 
 def wait(mode: str, msg='Press [Enter] to continue'):
-    MODES = ('c', 't', 'a')
+    MODES = ('c', 't', 'a', 'f')
     if type(mode) != str: raise TypeError('mode must be a string')
-    if mode not in MODES: raise ValueError('unknown mode')
+    if mode not in MODES: raise ValueError(
+        f'unknown mode, supported modes: {", ".join(MODES)}')
 
-    if mode == 'c': system('clear')
-    elif mode in ('t', 'a'): input(f'\n{msg}... ')
+    if mode in ('c', 'f'): system('clear')
+    elif mode in ('t', 'a', 'f'): input(f'\n{msg}... ')
     if mode == 'a': system('clear')
 
 
@@ -163,10 +170,11 @@ def show_product_page(active_client, product, stock_items_manager,
     fratings += '\n\n'.join(formatted_ratings) if len(formatted_ratings) > 0 \
         else 'Neither one rating has been written yet...'
 
-    options = ['Add to cart', 'View all ratings',
-        'Leave a rating', 'Back to this category products']
+    options = ['Add to cart', 'View all ratings', 'Leave a rating',
+        'Back to this category products']
     if aclient_rating != None:
         options[2] = 'Change my rating'
+        options.insert(3, 'Delete my rating')
         formatted_rating = get_formatted_rating(aclient_rating,
             clients_manager)
         fratings += f'\n\nYour rating:\n{formatted_rating}'
@@ -185,7 +193,8 @@ def get_formatted_order_items(cats_manager, prods_manager, *order_items,
         category = cats_manager.find(id=product.category_id)
         formatted_ois.append(' | '.join((product.name, f'{product.price} MDL',
             get_formatted_category(category, cats_manager))) +
-            f' --- x{order_item.quantity}')
+            f' --- x{order_item.quantity} - ' +
+            f'{product.price * order_item.quantity} MDL')
     if with_total_cost: return tuple([tuple(formatted_ois), total_cost])
     else: return tuple(formatted_ois)
 
@@ -200,11 +209,11 @@ def get_order_payment(order, payments_manager, new_total_cost=None):
         payments_manager.save(payment)
     return payment
 
-def show_order(order, formatted_ois: tuple, total_cost: int,
-  payments_manager) -> None:
+def format_order(order, formatted_ois: tuple, total_cost: int,
+  payments_manager) -> str:
     formatted_order = get_cart_string(formatted_ois)
     payment = get_order_payment(order, payments_manager, total_cost)
-    print(formatted_order + f'\nTotal cost: {payment.price} MDL')
+    return formatted_order + f'\nTotal cost: {payment.price} MDL'
 
 
 def get_days_names() -> tuple[str]: return tuple(
@@ -330,8 +339,9 @@ def format_shops(addresses_manager, *shops) -> list:
         formatted_shops.append(formatted_shop + '\n' + '\n'.join(working_time))
     return formatted_shops
 
-def complete_order(orders_manager, addresses_manager, payments_manager, order,
-  formatted_ois: tuple, shops: list, services: list) -> bool:
+def complete_order(orders_manager, addresses_manager, payments_manager,
+  si_manager, order, order_items: list, formatted_ois: tuple, shops: list,
+  services: list) -> bool:
     payment = get_order_payment(order, payments_manager)
     title = f'{get_cart_string(formatted_ois)}\nTotal cost:' + \
         f' {payment.price} MDL'
@@ -382,6 +392,10 @@ def complete_order(orders_manager, addresses_manager, payments_manager, order,
 
     # ----> There may be integrated real payment <----
 
+    for order_item in order_items:
+        stock_item = si_manager.find(product_id=order_item.product_id)[0]
+        stock_item.quantity -= order_item.quantity
+        si_manager.save(stock_item)
     orders_manager.delete(order)
     wait('a', 'Press [Enter] to return to the main menu')
     return True

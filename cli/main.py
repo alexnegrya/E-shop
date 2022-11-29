@@ -146,7 +146,7 @@ def show_product_page(active_client, product, stock_items_manager,
     Returns option (not it index) selected by user.
     """
     quantity = stock_items_manager.find(product_id=product.id)[0].quantity
-    product_info = ' | '.join((product.name, f'{product.price} MDL',
+    product_info = ' | '.join((product.name, f'{product.price} USD',
         f'{quantity} in stock' if quantity > 0 else 'Out of stock'))
     
     ratings = ratings_manager.find(product_id=product.id)
@@ -191,10 +191,10 @@ def get_formatted_order_items(cats_manager, prods_manager, *order_items,
         product = prods_manager.find(id=order_item.product_id)
         if with_total_cost: total_cost += product.price * order_item.quantity
         category = cats_manager.find(id=product.category_id)
-        formatted_ois.append(' | '.join((product.name, f'{product.price} MDL',
+        formatted_ois.append(' | '.join((product.name, f'{product.price} USD',
             get_formatted_category(category, cats_manager))) +
             f' --- x{order_item.quantity} - ' +
-            f'{product.price * order_item.quantity} MDL')
+            f'{product.price * order_item.quantity} USD')
     if with_total_cost: return tuple([tuple(formatted_ois), total_cost])
     else: return tuple(formatted_ois)
 
@@ -213,7 +213,7 @@ def format_order(order, formatted_ois: tuple, total_cost: int,
   payments_manager) -> str:
     formatted_order = get_cart_string(formatted_ois)
     payment = get_order_payment(order, payments_manager, total_cost)
-    return formatted_order + f'\nTotal cost: {payment.price} MDL'
+    return formatted_order + f'\nTotal cost: {payment.price} USD'
 
 
 def get_days_names() -> tuple[str]: return tuple(
@@ -266,15 +266,14 @@ def get_validated_card_data(data_type: str, prev_menu: str):
             raise_validation_error(standart_err_msg, prev_menu)
     return data
 
-def is_user_choose_payment_method(title: str, prev_menu: str) -> bool:
+def get_selected_payment_method(title: str, prev_menu: str) -> str | None:
     while True:
         wait('c')
         choice = get_user_choice(*list(PAYMENT_METHODS) +
             [f'Back to {prev_menu} menu'], title=title +
             '\n\nPlease select one of the available payment methods.')
         is_selected = True
-        if choice == 0: return False # Go back
-        elif choice == 1: return True # In cash
+        if choice == 1: return 'In cash' # In cash
         elif choice == 2: # By card
             data_types = ['card holder name', 'card number', 'expiry date',
                 'security code']
@@ -300,12 +299,12 @@ def is_user_choose_payment_method(title: str, prev_menu: str) -> bool:
                         prev_menu): continue
                     else: is_selected = False
                 break
-        return is_selected
+        if choice != 0: return PAYMENT_METHODS[choice - 1]
 
 def format_services(*services, check_marks_dict=None) -> list:
     formatted_services = []
     for service in services:
-        formatted_service = f'{service.name} | {service.price} MDL'
+        formatted_service = f'{service.name} | {service.price} USD'
         if check_marks_dict != None:
             check_mark = f'{"☑" if check_marks_dict[service.id] else "☐"}'
             formatted_service = f'{check_mark} {formatted_service}'
@@ -344,13 +343,14 @@ def complete_order(orders_manager, addresses_manager, payments_manager,
   services: list) -> bool:
     payment = get_order_payment(order, payments_manager)
     title = f'{get_cart_string(formatted_ois)}\nTotal cost:' + \
-        f' {payment.price} MDL'
+        f' {payment.price} USD'
     continue_cycle = False
 
     while True:
         wait('c')
         prev_menu = 'cart'
-        if not is_user_choose_payment_method(title, prev_menu): return False
+        method = get_selected_payment_method(title, prev_menu)
+        if method == None: return False
         choice = get_user_choice('Self-delivery', 'Delivery',
             f'Back to {prev_menu} menu',
             title=title + '\n\nPlease select delivery method.')
@@ -385,13 +385,14 @@ def complete_order(orders_manager, addresses_manager, payments_manager,
                 break
             for service in services:
                 if check_marks_dict[service.id]: payment.price += service.price
-            payments_manager.save(payment)
 
         if continue_cycle: continue
         else: break
 
     # ----> There may be integrated real payment <----
 
+    payment.method = method
+    payments_manager.save(payment)
     for order_item in order_items:
         stock_item = si_manager.find(product_id=order_item.product_id)[0]
         stock_item.quantity -= order_item.quantity

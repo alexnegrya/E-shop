@@ -173,7 +173,7 @@ to go the specified page{back_info}\
         products = prods_manager.sort(*products)
         prods = []
         for product in products:
-            prod = f'{product.name} | {product.price} MDL'
+            prod = f'{product.name} | {product.price} USD'
             prods.append(prod)
         choice = self.paginate(*prods, title=title + ' -> ' +
             get_formatted_category(category, cats_manager))

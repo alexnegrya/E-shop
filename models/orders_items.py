@@ -15,5 +15,4 @@ class OrderItem(Model):
                 f'{" ".join(name.split("_").strip())} must have integer value')
 
 
-class OrdersItemsManager(ModelManager):
-    MODEL = OrderItem
+class OrdersItemsManager(ModelManager): MODEL = OrderItem

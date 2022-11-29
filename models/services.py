@@ -30,5 +30,4 @@ class Service(Model):
             raise TypeError(f'{name} must have int value')
 
 
-class ServicesManager(ModelManager):
-    MODEL = Service
+class ServicesManager(ModelManager): MODEL = Service

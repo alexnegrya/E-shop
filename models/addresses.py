@@ -38,5 +38,4 @@ class Address(Model):
             self.setattr_value = value.strip()
 
 
-class AddressesManager(ModelManager):
-    MODEL = Address
+class AddressesManager(ModelManager): MODEL = Address

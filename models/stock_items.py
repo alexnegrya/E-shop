@@ -15,5 +15,4 @@ class StockItem(Model):
             raise TypeError(f'{name} must have int value')
 
 
-class StockItemsManager(ModelManager):
-    MODEL = StockItem
+class StockItemsManager(ModelManager): MODEL = StockItem

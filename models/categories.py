@@ -39,5 +39,4 @@ class Category(Model):
             if value != None and type(value) != datetime: raise TypeError('created or updated must have datetime object value')
 
 
-class CategoriesManager(ModelManager):
-    MODEL = Category
+class CategoriesManager(ModelManager): MODEL = Category

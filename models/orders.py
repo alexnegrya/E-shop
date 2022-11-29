@@ -12,5 +12,4 @@ class Order(Model):
         if type(value) != int: raise ValueError(f'{name} must have int value')
 
 
-class OrdersManager(ModelManager):
-    MODEL = Order
+class OrdersManager(ModelManager): MODEL = Order

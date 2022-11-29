@@ -39,5 +39,4 @@ class Rating(Model):
             f'{name} must have int value')
 
 
-class RatingsManager(ModelManager):
-    MODEL = Rating
+class RatingsManager(ModelManager): MODEL = Rating

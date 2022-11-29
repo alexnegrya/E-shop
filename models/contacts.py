@@ -17,5 +17,4 @@ class Contact(Model):
         elif name == 'client_id' and type(value) != int: raise TypeError('client id must have int value')
 
 
-class ContactsManager(ModelManager):
-    MODEL = Contact
+class ContactsManager(ModelManager): MODEL = Contact

@@ -32,5 +32,4 @@ class Product(Model):
         elif type(value) != int: raise TypeError(f'{name} must have int value')
 
 
-class ProductsManager(ModelManager):
-    MODEL = Product
+class ProductsManager(ModelManager): MODEL = Product

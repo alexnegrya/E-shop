@@ -13,5 +13,4 @@ class Payment(Model):
             'price must be int value')
 
 
-class PaymentsManager(ModelManager):
-    MODEL = Payment
+class PaymentsManager(ModelManager): MODEL = Payment

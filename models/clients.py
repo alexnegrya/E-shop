@@ -49,5 +49,4 @@ class Client(Model):
                 raise TypeError('wrong type of Address id')
 
 
-class ClientsManager(ModelManager):
-    MODEL = Client
+class ClientsManager(ModelManager): MODEL = Client
